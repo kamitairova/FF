@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: jobboard-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: jobboard
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    container_name: jobboard-backend
+    command: npm run dev
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/jobboard
+      JWT_SECRET: secret
+    volumes:
+      - ./backend:/app
+
+volumes:
+  postgres_data:
