@@ -1,22 +1,48 @@
-import express from "express";
-import { prisma } from "./prisma";
+  import express from "express";
+  import cors from "cors";
+  import { prisma } from "./prisma";
+  import { authRouter } from "./modules/auth/auth.routes";
+  import { errorHandler } from "./middlewares/error";
+  import { jobsRouter } from "./modules/jobs/jobs.routes";
+
+  const app = express();
+  const PORT = Number(process.env.PORT) || 5000;
 
 
-const app = express();
-const PORT = 5000;
+  app.use(cors({
+    origin: true, 
+    credentials: true
+  }));
 
-app.use(express.json());
+  // app.use(cors({
+  //   origin: 'http://localhost:5173', // разрешаем только фронтенд
+  //   credentials: true,
+  //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  //   allowedHeaders: ['Content-Type', 'Authorization']
+  // }));
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
-});
+  app.use(express.json());
 
-app.get("/api/db-check", async (_req, res) => {
-  // простой запрос к БД, чтобы убедиться, что всё реально работает
-  const result = await prisma.user.findMany();
-  res.json({ ok: true, usersCount: result.length });
-});
+  app.use((req, _res, next) => {
+    console.log(`[${req.method}] ${req.url}`);
+    next();
+  });
 
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  app.use("/api/auth", authRouter);
+
+  app.use("/api/jobs", jobsRouter);
+
+  app.get("/api/db-check", async (_req, res) => {
+    const result = await prisma.user.findMany();
+    res.json({ ok: true, usersCount: result.length });
+  });
+
+  app.use(errorHandler);
+
+  app.listen(PORT, () => {
+    console.log(`🚀 Backend running on http://localhost:${PORT}`);
+  });

@@ -1,0 +1,32 @@
+.jobs-layout{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  gap:16px;
+}
+@media (max-width: 900px){
+  .jobs-layout{ grid-template-columns: 1fr; }
+}
+.job-card{
+  padding: 14px;
+}
+.job-title{
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+}
+.job-meta{
+  margin-top: 6px;
+  color: var(--muted);
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  font-size: 13px;
+}
+.job-salary{
+  font-weight: 900;
+  color: var(--text);
+}
+.sidebar-sticky{
+  position: sticky;
+  top: 84px;
+}

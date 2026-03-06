@@ -2,19 +2,18 @@ FROM node:20
 
 WORKDIR /app
 
-# Установить TypeScript глобально
+RUN apt-get update && apt-get install -y netcat-openbsd
+
 RUN npm install -g typescript
 
-# Копируем package.json
 COPY package*.json ./
 
-# Устанавливаем ВСЕ зависимости (включая dev)
-RUN npm ci --include=dev
+RUN npm install
 
-# Копируем остальные файлы
 COPY . .
 
-# Собираем проект
+RUN npx prisma generate
+
 RUN npm run build
 
 EXPOSE 5000
