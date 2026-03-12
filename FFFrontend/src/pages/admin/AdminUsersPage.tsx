@@ -12,16 +12,20 @@ export function AdminUsersPage() {
   const [info, setInfo] = useState<string | null>(null);
 
   const disable = useMutation({
-    mutationFn: async () => adminApi.disableUser(token!, userId.trim()),
-    onSuccess: () => setInfo("Пользователь отключён."),
-    onError: (e: any) => setInfo(e?.message ?? "Не удалось отключить.")
+  mutationFn: async () => adminApi.disableUser(token!, Number(userId.trim())),
+  onSuccess: () => setInfo("Пользователь отключён."),
+  onError: (e: any) => setInfo(e?.message ?? "Не удалось отключить.")
   });
 
   const enable = useMutation({
-    mutationFn: async () => adminApi.enableUser(token!, userId.trim()),
-    onSuccess: () => setInfo("Пользователь включён."),
-    onError: (e: any) => setInfo(e?.message ?? "Не удалось включить.")
+  mutationFn: async () => adminApi.enableUser(token!, Number(userId.trim())),
+  onSuccess: () => setInfo("Пользователь включён."),
+  onError: (e: any) => setInfo(e?.message ?? "Не удалось включить.")
   });
+
+  const parsedUserId = Number(userId.trim());
+  const invalid = !userId.trim() || Number.isNaN(parsedUserId);
+  
 
   return (
     <div className="grid" style={{ gap: 14 }}>

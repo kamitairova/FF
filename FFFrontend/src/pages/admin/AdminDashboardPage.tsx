@@ -10,7 +10,7 @@ export function AdminDashboardPage() {
   const { token } = useAuth();
   const q = useQuery({
     queryKey: ["adminMetrics"],
-    queryFn: () => adminApi.metrics(token!),
+    queryFn: () => adminApi.dashboard(token!),
     enabled: !!token
   });
 

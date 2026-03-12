@@ -4,6 +4,7 @@
   import { authRouter } from "./modules/auth/auth.routes";
   import { errorHandler } from "./middlewares/error";
   import { jobsRouter } from "./modules/jobs/jobs.routes";
+  import { adminRouter } from "./modules/admin/admin.routes";
 
   const app = express();
   const PORT = Number(process.env.PORT) || 5000;
@@ -35,6 +36,8 @@
   app.use("/api/auth", authRouter);
 
   app.use("/api/jobs", jobsRouter);
+
+  app.use("/api/admin", adminRouter);
 
   app.get("/api/db-check", async (_req, res) => {
     const result = await prisma.user.findMany();

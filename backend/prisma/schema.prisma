@@ -11,41 +11,72 @@ datasource db {
 enum Role {
   USER
   COMPANY
+  ADMIN
 }
 
 enum VacancyStatus {
   PENDING
   APPROVED
   REJECTED
+  REMOVED
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+}
+
+enum WorkMode {
+  REMOTE
+  ONSITE
+  HYBRID
+}
+
+enum ExperienceLevel {
+  INTERN
+  JUNIOR
+  MIDDLE
+  SENIOR
+  LEAD
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  password   String
+  role       Role     @default(USER)
+  isDisabled Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  // COMPANY вакансии
-  vacancies Vacancy[] @relation("CompanyVacancies")
+  vacancies  Vacancy[] @relation("CompanyVacancies")
 }
 
 model Vacancy {
-  id          Int           @id @default(autoincrement())
-  title       String
-  description String
-  salaryFrom  Int?
-  salaryTo    Int?
-  city        String?
-  status      VacancyStatus @default(PENDING)
+  id               Int              @id @default(autoincrement())
+  title            String
+  description      String
+  salaryFrom       Int?
+  salaryTo         Int?
+  city             String?
+  category         String?
+  employmentType   EmploymentType?
+  workMode         WorkMode?
+  experienceLevel  ExperienceLevel?
+  requiredSkills   String[]         @default([])
+  status           VacancyStatus    @default(PENDING)
 
-  companyId   Int
-  company     User          @relation("CompanyVacancies", fields: [companyId], references: [id], onDelete: Cascade)
+  companyId        Int
+  company          User             @relation("CompanyVacancies", fields: [companyId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   @@index([companyId])
   @@index([status])
+  @@index([createdAt])
+  @@index([category])
+  @@index([employmentType])
+  @@index([workMode])
+  @@index([experienceLevel])
 }

@@ -59,8 +59,20 @@ export function JobDetailPage() {
             <div className="kv" style={{ marginTop: 8 }}>
               <span><b>{job.company?.email ?? "Компания"}</b></span>
               <span>{job.city ?? "Город не указан"}</span>
+              {job.category && <span>{job.category}</span>}
+              {job.workMode && <span>{job.workMode}</span>}
+              {job.employmentType && <span>{job.employmentType}</span>}
+              {job.experienceLevel && <span>{job.experienceLevel}</span>}
               <span className="badge">{job.status}</span>
             </div>
+
+            {!!job.requiredSkills?.length && (
+              <div className="badges" style={{ marginTop: 14 }}>
+                {job.requiredSkills.map((skill) => (
+                  <span key={skill} className="badge">{skill}</span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ textAlign: "right" }}>

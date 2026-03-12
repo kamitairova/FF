@@ -1,8 +1,9 @@
 import { Router } from "express";
+import { Request, Response } from "express";
 import { validateBody } from "../../middlewares/validate";
 import { requireAuth, AuthedRequest } from "../../middlewares/auth";
 import { requireRole } from "../../middlewares/role";
-import { createJobSchema, updateJobSchema, approveSchema } from "./jobs.schemas";
+import { createJobSchema, updateJobSchema } from "./jobs.schemas";
 import * as Jobs from "./jobs.service";
 
 export const jobsRouter = Router();
@@ -10,19 +11,19 @@ export const jobsRouter = Router();
 /**
  * GET /api/jobs
  */
-jobsRouter.get("/", async (_req, res) => {
-  const items = await Jobs.listPublicJobs();
-  res.json({ items });
+jobsRouter.get("/", async (req: Request, res: Response) => {
+  const result = await Jobs.listPublicJobs(req.query);
+  res.json(result);
 });
 
 /**
- * GET /api/jobs/my
+ * GET /api/jobs/my/list
  */
 jobsRouter.get(
   "/my/list",
   requireAuth,
   requireRole("COMPANY"),
-  async (req: AuthedRequest, res) => {
+  async (req: AuthedRequest, res: Response) => {
     const companyId = parseInt(req.user!.id);
     const items = await Jobs.listMyJobs(companyId);
     res.json({ items });
@@ -32,11 +33,11 @@ jobsRouter.get(
 /**
  * GET /api/jobs/:id
  */
-jobsRouter.get("/:id", async (req, res) => {
+jobsRouter.get("/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
   const job = await Jobs.getJobById(id);
-  if (!job) return res.status(404).json({ message: "Not found" });
 
+  if (!job) return res.status(404).json({ message: "Not found" });
   if (job.status !== "APPROVED") {
     return res.status(404).json({ message: "Not found" });
   }
@@ -52,14 +53,12 @@ jobsRouter.post(
   requireAuth,
   requireRole("COMPANY"),
   validateBody(createJobSchema),
-  async (req: AuthedRequest, res) => {
+  async (req: AuthedRequest, res: Response) => {
     const companyId = parseInt(req.user!.id);
     const job = await Jobs.createJob(companyId, req.body);
     res.status(201).json({ job });
   }
 );
-
-
 
 /**
  * PATCH /api/jobs/:id
@@ -69,7 +68,7 @@ jobsRouter.patch(
   requireAuth,
   requireRole("COMPANY"),
   validateBody(updateJobSchema),
-  async (req: AuthedRequest, res) => {
+  async (req: AuthedRequest, res: Response) => {
     const companyId = parseInt(req.user!.id);
     const id = Number(req.params.id);
 
@@ -88,7 +87,7 @@ jobsRouter.delete(
   "/:id",
   requireAuth,
   requireRole("COMPANY"),
-  async (req: AuthedRequest, res) => {
+  async (req: AuthedRequest, res: Response) => {
     const companyId = parseInt(req.user!.id);
     const id = Number(req.params.id);
 

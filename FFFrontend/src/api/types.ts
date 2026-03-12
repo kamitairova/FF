@@ -1,5 +1,3 @@
-// FFFrontend/src/api/types.ts
-
 export type ApiError = {
   status?: number;
   message: string;
@@ -16,7 +14,10 @@ export type Me = {
   isDisabled?: boolean;
 };
 
-export type VacancyStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type VacancyStatus = "PENDING" | "APPROVED" | "REJECTED" | "REMOVED";
+export type EmploymentType = "FULL_TIME" | "PART_TIME";
+export type WorkMode = "REMOTE" | "ONSITE" | "HYBRID";
+export type ExperienceLevel = "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
 
 export type JobPost = {
   id: number;
@@ -25,6 +26,11 @@ export type JobPost = {
   salaryFrom?: number | null;
   salaryTo?: number | null;
   city?: string | null;
+  category?: string | null;
+  employmentType?: EmploymentType | null;
+  workMode?: WorkMode | null;
+  experienceLevel?: ExperienceLevel | null;
+  requiredSkills?: string[];
   status: VacancyStatus;
   createdAt?: string;
   updatedAt?: string;
