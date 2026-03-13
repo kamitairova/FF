@@ -1,6 +1,7 @@
 import React from "react";
+import clsx from "clsx";
 import "./ui.css";
 
-export function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className="input" {...props} />;
+export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={clsx("input", className)} {...props} />;
 }

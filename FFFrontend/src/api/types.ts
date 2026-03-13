@@ -19,6 +19,15 @@ export type EmploymentType = "FULL_TIME" | "PART_TIME";
 export type WorkMode = "REMOTE" | "ONSITE" | "HYBRID";
 export type ExperienceLevel = "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
 
+export type SeekerProfile = {
+  fullName: string;
+  location: string;
+  headline: string;
+  summary: string;
+  skills: string[];
+  experienceLevel: ExperienceLevel | "";
+};
+
 export type JobPost = {
   id: number;
   title: string;

@@ -15,30 +15,27 @@ export function LoginPage() {
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
-
   const from = loc?.state?.from ?? "/";
 
   return (
-    <AuthCard title="Вход">
+    <AuthCard title="Вход в аккаунт">
       <div className="grid">
         <div>
           <label className="label">Email</label>
           <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          <FieldError err={err} field="email" />
-        </div>
-        <div>
-          <label className="label">Пароль</label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <FieldError err={err} field="password" />
+          <FieldError error={err?.details?.email} />
         </div>
 
-        {err && !err.details && (
-          <div style={{ color: "var(--danger)", fontWeight: 800 }}>{err.message}</div>
-        )}
+        <div>
+          <label className="label">Пароль</label>
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Введите пароль" />
+          <FieldError error={err?.details?.password} />
+        </div>
+
+        {err && !err.details && <div className="badge">{err.message}</div>}
 
         <Button
           variant="primary"
-          disabled={loading}
           onClick={async () => {
             setLoading(true);
             setErr(null);
@@ -56,7 +53,7 @@ export function LoginPage() {
         </Button>
 
         <div className="small">
-          Нет аккаунта? <Link to="/register" style={{ color: "var(--primary)", fontWeight: 800 }}>Зарегистрироваться</Link>
+          Нет аккаунта? <Link to="/register" style={{ color: "#fff", fontWeight: 800 }}>Зарегистрироваться</Link>
         </div>
       </div>
     </AuthCard>

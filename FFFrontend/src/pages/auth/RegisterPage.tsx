@@ -11,42 +11,39 @@ import { ApiError, UserRole } from "../../api/types";
 export function RegisterPage() {
   const nav = useNavigate();
   const { register } = useAuth();
-  const [role, setRole] = useState<Exclude<UserRole, "ADMIN">>("JOB_SEEKER");
+  const [role, setRole] = useState<UserRole>("JOB_SEEKER");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
 
   return (
-    <AuthCard title="Регистрация">
+    <AuthCard title="Создание аккаунта">
       <div className="grid">
         <div>
           <label className="label">Роль</label>
-          <Select value={role} onChange={(e) => setRole(e.target.value as any)}>
-            <option value="JOB_SEEKER">Соискатель (JOB_SEEKER)</option>
-            <option value="COMPANY">Компания/Рекрутер (COMPANY)</option>
+          <Select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
+            <option value="JOB_SEEKER">Соискатель</option>
+            <option value="COMPANY">Компания / рекрутер</option>
           </Select>
         </div>
 
         <div>
           <label className="label">Email</label>
           <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-          <FieldError err={err} field="email" />
+          <FieldError error={err?.details?.email} />
         </div>
 
         <div>
           <label className="label">Пароль</label>
-          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <FieldError err={err} field="password" />
+          <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Не менее 6 символов" />
+          <FieldError error={err?.details?.password} />
         </div>
 
-        {err && !err.details && (
-          <div style={{ color: "var(--danger)", fontWeight: 800 }}>{err.message}</div>
-        )}
+        {err && !err.details && <div className="badge">{err.message}</div>}
 
         <Button
           variant="primary"
-          disabled={loading}
           onClick={async () => {
             setLoading(true);
             setErr(null);
@@ -64,7 +61,7 @@ export function RegisterPage() {
         </Button>
 
         <div className="small">
-          Уже есть аккаунт? <Link to="/login" style={{ color: "var(--primary)", fontWeight: 800 }}>Войти</Link>
+          Уже есть аккаунт? <Link to="/login" style={{ color: "#fff", fontWeight: 800 }}>Войти</Link>
         </div>
       </div>
     </AuthCard>

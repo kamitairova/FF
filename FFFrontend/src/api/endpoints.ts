@@ -142,6 +142,8 @@ export const seekerApi = {
 
   profile: async (_token: string) => ({ profile: null as any }),
   updateProfile: async (_token: string, _body: any) => ({ ok: true }),
+  getProfile: async (_token: string) => ({ fullName: "", location: "", headline: "", summary: "", skills: [], experienceLevel: "" as any }),
+  putProfile: async (_token: string, body: any) => body,
   resume: async (_token: string) => ({ resume: null as any }),
 };
 

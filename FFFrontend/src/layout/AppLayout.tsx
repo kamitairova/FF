@@ -5,7 +5,7 @@ import { Button } from "../components/Button";
 import "../components/ui.css";
 
 function roleHome(role: string) {
-  if (role === "JOB_SEEKER") return "/seeker/applications";
+  if (role === "JOB_SEEKER") return "/seeker/profile";
   if (role === "COMPANY") return "/company/jobs";
   if (role === "ADMIN") return "/admin";
   return "/";
@@ -16,21 +16,24 @@ export function AppLayout() {
   const nav = useNavigate();
 
   return (
-    <>
+    <div className="page-shell">
       <header className="header">
         <div className="container header-inner">
-          <a className="brand" href="/" onClick={(e) => { e.preventDefault(); nav("/"); }}>
-            <span className="brand-badge" />
-            JobSearch
-          </a>
+          <NavLink to="/" className="brand">
+            <span className="brand-badge">ff</span>
+            <span className="brand-copy">
+              <span>Fast Find</span>
+              <small>jobs • candidates • chat</small>
+            </span>
+          </NavLink>
 
-          <nav className="nav" aria-label="navigation">
-            <NavLink to="/" end>Вакансии</NavLink>
+          <nav className="nav">
+            <NavLink to="/">Вакансии</NavLink>
             {token && me?.role === "JOB_SEEKER" && (
               <>
+                <NavLink to="/seeker/profile">Профиль</NavLink>
                 <NavLink to="/seeker/applications">Отклики</NavLink>
                 <NavLink to="/seeker/saved">Избранное</NavLink>
-                <NavLink to="/seeker/profile">Профиль</NavLink>
                 <NavLink to="/seeker/resume">Резюме</NavLink>
                 <NavLink to="/inbox">Сообщения</NavLink>
                 <NavLink to="/notifications">Уведомления</NavLink>
@@ -54,7 +57,7 @@ export function AppLayout() {
             )}
           </nav>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className="header-actions">
             {!token ? (
               <>
                 <Button onClick={() => nav("/login")}>Войти</Button>
@@ -62,27 +65,38 @@ export function AppLayout() {
               </>
             ) : (
               <>
-                <Button variant="ghost" onClick={() => nav(roleHome(me?.role ?? ""))}>
-                  <span style={{ fontWeight: 800 }}>{me?.email ?? "Аккаунт"}</span>
-                </Button>
-                <Button onClick={() => logout().then(() => nav("/"))}>Выйти</Button>
+                <Button onClick={() => nav(roleHome(me?.role ?? ""))}>{me?.email ?? "Аккаунт"}</Button>
+                <Button variant="ghost" onClick={() => logout().then(() => nav("/"))}>Выйти</Button>
               </>
             )}
           </div>
         </div>
       </header>
 
-      <main className="container" style={{ padding: "18px 16px 44px" }}>
+      <main className="page-main">
         <Outlet />
       </main>
 
-      <footer className="container" style={{ padding: "22px 16px", color: "var(--muted)" }}>
-        <div className="hr" style={{ marginBottom: 14 }} />
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <span>JobSearch MVP — UI в стиле hh/LinkedIn.</span>
-          <span>API base: <b style={{ color: "var(--text)" }}>{(import.meta as any).env?.VITE_API_BASE_URL || "/api"}</b></span>
+      <footer className="footer">
+        <div className="container footer-inner">
+          <div>
+            <div className="brand" style={{ marginBottom: 8 }}>
+              <span className="brand-badge">ff</span>
+              <span className="brand-copy">
+                <span>Fast Find</span>
+                <small>Быстрый и аккуратный поиск работы</small>
+              </span>
+            </div>
+            <div className="small">Улучшенный frontend без изменений backend API.</div>
+          </div>
+          <div className="footer-links">
+            <NavLink to="/">Вакансии</NavLink>
+            <NavLink to="/login">Войти</NavLink>
+            <NavLink to="/register">Регистрация</NavLink>
+            <NavLink to="/notifications">Уведомления</NavLink>
+          </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }
