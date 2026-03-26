@@ -53,7 +53,7 @@ export function LoginPage() {
         </Button>
 
         <div className="small">
-          Нет аккаунта? <Link to="/register" style={{ color: "#fff", fontWeight: 800 }}>Зарегистрироваться</Link>
+          Нет аккаунта? <Link to="/register" style={{ color: "var(--primary)", fontWeight: 800 }}>Зарегистрироваться</Link>
         </div>
       </div>
     </AuthCard>

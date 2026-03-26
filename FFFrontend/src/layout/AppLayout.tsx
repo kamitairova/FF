@@ -1,102 +1,133 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { Button } from "../components/Button";
 import "../components/ui.css";
 
 function roleHome(role: string) {
-  if (role === "JOB_SEEKER") return "/seeker/profile";
+  if (role === "JOB_SEEKER") return "/";
   if (role === "COMPANY") return "/company/jobs";
   if (role === "ADMIN") return "/admin";
   return "/";
+}
+
+function icon(label: string) {
+  const icons: Record<string, string> = {
+    jobs: "⌕",
+    applications: "▣",
+    saved: "♡",
+    profile: "◌",
+    resume: "✎",
+    messages: "✉",
+    notifications: "⎋",
+    company: "▤",
+    candidates: "◫",
+    admin: "⚙",
+    taxonomy: "#",
+  };
+  return icons[label] ?? "•";
 }
 
 export function AppLayout() {
   const { me, token, logout } = useAuth();
   const nav = useNavigate();
 
+  const commonLinks = [{ to: "/", label: "Вакансии", key: "jobs" }];
+  const seekerLinks = [
+    { to: "/seeker/applications", label: "Отклики", key: "applications" },
+    { to: "/seeker/saved", label: "Избранное", key: "saved" },
+    { to: "/seeker/profile", label: "Профиль", key: "profile" },
+    { to: "/seeker/resume", label: "Резюме", key: "resume" },
+    { to: "/messages", label: "Сообщения", key: "messages" },
+    { to: "/notifications", label: "Уведомления", key: "notifications" },
+  ];
+  const companyLinks = [
+    { to: "/company/jobs", label: "Мои вакансии", key: "company" },
+    { to: "/company/candidates", label: "Кандидаты", key: "candidates" },
+    { to: "/messages", label: "Сообщения", key: "messages" },
+    { to: "/notifications", label: "Уведомления", key: "notifications" },
+  ];
+  const adminLinks = [
+    { to: "/admin", label: "Админ", key: "admin" },
+    { to: "/admin/jobs", label: "Модерация", key: "company" },
+    { to: "/admin/users", label: "Пользователи", key: "profile" },
+    { to: "/admin/taxonomy", label: "Категории", key: "taxonomy" },
+  ];
+
+  const links = [
+    ...commonLinks,
+    ...(token && me?.role === "JOB_SEEKER" ? seekerLinks : []),
+    ...(token && me?.role === "COMPANY" ? companyLinks : []),
+    ...(token && me?.role === "ADMIN" ? adminLinks : []),
+    ...(!token
+      ? [
+          { to: "/login", label: "Войти", key: "profile" },
+          { to: "/register", label: "Регистрация", key: "resume" },
+        ]
+      : []),
+  ];
+
   return (
     <div className="page-shell">
-      <header className="header">
-        <div className="container header-inner">
-          <NavLink to="/" className="brand">
-            <span className="brand-badge">ff</span>
-            <span className="brand-copy">
-              <span>Fast Find</span>
-              <small>jobs • candidates • chat</small>
-            </span>
-          </NavLink>
+      <div className="container">
+        <div className="page-frame">
+          <aside className="app-sidebar">
+            <div className="sidebar-top">
+              <div className="sidebar-logo">
+                <div className="sidebar-logo-mark">ff</div>
+                <div className="sidebar-logo-text">
+                  <strong>Fast Find</strong>
+                  <span>job platform</span>
+                </div>
+              </div>
 
-          <nav className="nav">
-            <NavLink to="/">Вакансии</NavLink>
-            {token && me?.role === "JOB_SEEKER" && (
-              <>
-                <NavLink to="/seeker/profile">Профиль</NavLink>
-                <NavLink to="/seeker/applications">Отклики</NavLink>
-                <NavLink to="/seeker/saved">Избранное</NavLink>
-                <NavLink to="/seeker/resume">Резюме</NavLink>
-                <NavLink to="/inbox">Сообщения</NavLink>
-                <NavLink to="/notifications">Уведомления</NavLink>
-              </>
-            )}
-            {token && me?.role === "COMPANY" && (
-              <>
-                <NavLink to="/company/jobs">Мои вакансии</NavLink>
-                <NavLink to="/company/candidates">Кандидаты</NavLink>
-                <NavLink to="/inbox">Сообщения</NavLink>
-                <NavLink to="/notifications">Уведомления</NavLink>
-              </>
-            )}
-            {token && me?.role === "ADMIN" && (
-              <>
-                <NavLink to="/admin">Админ</NavLink>
-                <NavLink to="/admin/jobs">Модерация</NavLink>
-                <NavLink to="/admin/users">Пользователи</NavLink>
-                <NavLink to="/admin/taxonomy">Категории/Теги</NavLink>
-              </>
-            )}
-          </nav>
-
-          <div className="header-actions">
-            {!token ? (
-              <>
-                <Button onClick={() => nav("/login")}>Войти</Button>
-                <Button variant="primary" onClick={() => nav("/register")}>Регистрация</Button>
-              </>
-            ) : (
-              <>
-                <Button onClick={() => nav(roleHome(me?.role ?? ""))}>{me?.email ?? "Аккаунт"}</Button>
-                <Button variant="ghost" onClick={() => logout().then(() => nav("/"))}>Выйти</Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="page-main">
-        <Outlet />
-      </main>
-
-      <footer className="footer">
-        <div className="container footer-inner">
-          <div>
-            <div className="brand" style={{ marginBottom: 8 }}>
-              <span className="brand-badge">ff</span>
-              <span className="brand-copy">
-                <span>Fast Find</span>
-                <small>Быстрый и аккуратный поиск работы</small>
-              </span>
+              <nav className="sidebar-nav">
+                {links.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `sidebar-link${isActive ? " active" : ""}`
+                    }
+                  >
+                    <span className="sidebar-icon">{icon(item.key)}</span>
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </nav>
             </div>
-            <div className="small">Улучшенный frontend без изменений backend API.</div>
-          </div>
-          <div className="footer-links">
-            <NavLink to="/">Вакансии</NavLink>
-            <NavLink to="/login">Войти</NavLink>
-            <NavLink to="/register">Регистрация</NavLink>
-            <NavLink to="/notifications">Уведомления</NavLink>
-          </div>
+
+            <div className="sidebar-bottom">
+              <div className="sidebar-user">
+                <div className="sidebar-user-title">Аккаунт</div>
+                <div className="sidebar-user-email">{me?.email ?? "Гость"}</div>
+                <div className="small" style={{ marginTop: 6 }}>
+                  {token ? `Роль: ${me?.role ?? "USER"}` : "Войдите, чтобы откликаться и сохранять вакансии."}
+                </div>
+              </div>
+
+              {token ? (
+                <button
+                  className="btn sidebar-logout"
+                  onClick={() => logout().then(() => nav("/"))}
+                >
+                  Выйти
+                </button>
+              ) : (
+                <button className="btn btn-primary sidebar-logout" onClick={() => nav("/login")}>
+                  Начать
+                </button>
+              )}
+            </div>
+          </aside>
+
+          <main className="page-main">
+            <Outlet />
+            <div className="footer-note">
+              Fast Find — светлый дашборд с навигацией слева, контентом по центру и рабочими панелями справа.
+            </div>
+          </main>
         </div>
-      </footer>
+      </div>
     </div>
   );
 }
