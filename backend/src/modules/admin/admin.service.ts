@@ -137,10 +137,20 @@ export async function listJobs(
         status: true,
         createdAt: true,
         updatedAt: true,
-        company: {
+        companyProfileId: true,
+        companyProfile: {
           select: {
             id: true,
-            email: true,
+            companyName: true,
+            companyLogoUrl: true,
+            companyCity: true,
+            companyCountry: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -174,10 +184,20 @@ export async function setJobStatus(id: number, status: VacancyStatus) {
       status: true,
       createdAt: true,
       updatedAt: true,
-      company: {
+      companyProfileId: true,
+      companyProfile: {
         select: {
           id: true,
-          email: true,
+          companyName: true,
+          companyLogoUrl: true,
+          companyCity: true,
+          companyCountry: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
         },
       },
     },

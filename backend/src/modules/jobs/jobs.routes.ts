@@ -31,14 +31,39 @@ jobsRouter.get(
 );
 
 /**
+ * GET /api/jobs/my/:id
+ */
+jobsRouter.get(
+  "/my/:id",
+  requireAuth,
+  requireRole("COMPANY"),
+  async (req: AuthedRequest, res: Response) => {
+    const companyId = parseInt(req.user!.id);
+    const id = Number(req.params.id);
+
+    const job = await Jobs.getMyJobById(companyId, id);
+
+    if (!job) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    res.json({ job });
+  }
+);
+
+/**
  * GET /api/jobs/:id
  */
 jobsRouter.get("/:id", async (req: Request, res: Response) => {
   const id = Number(req.params.id);
-  const job = await Jobs.getJobById(id);
 
-  if (!job) return res.status(404).json({ message: "Not found" });
-  if (job.status !== "APPROVED") {
+  if (Number.isNaN(id)) {
+    return res.status(400).json({ message: "Invalid id" });
+  }
+
+  const job = await Jobs.getPublicJobById(id);
+
+  if (!job) {
     return res.status(404).json({ message: "Not found" });
   }
 
@@ -73,8 +98,14 @@ jobsRouter.patch(
     const id = Number(req.params.id);
 
     const result = await Jobs.updateJob(companyId, id, req.body);
-    if (result === null) return res.status(404).json({ message: "Not found" });
-    if (result === "FORBIDDEN") return res.status(403).json({ message: "Forbidden" });
+
+    if (result === null) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    if (result === "FORBIDDEN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
 
     res.json({ job: result });
   }
@@ -92,8 +123,14 @@ jobsRouter.delete(
     const id = Number(req.params.id);
 
     const result = await Jobs.deleteJob(companyId, id);
-    if (result === null) return res.status(404).json({ message: "Not found" });
-    if (result === "FORBIDDEN") return res.status(403).json({ message: "Forbidden" });
+
+    if (result === null) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
+    if (result === "FORBIDDEN") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
 
     res.status(204).send();
   }

@@ -1,5 +1,5 @@
 import { apiFetch } from "./client";
-import type { Application, JobPost, Me, Message, Paged, UserRole } from "./types";
+import type { Application, CompanyProfile, JobPost, Me, Message, Paged, UserRole } from "./types";
 
 export const authApi = {
   register: (body: { email: string; password: string; role?: Exclude<UserRole, "ADMIN"> }) =>
@@ -31,30 +31,47 @@ export const jobsApi = {
     apiFetch<{ job: JobPost }>(`/jobs/${id}`, { method: "GET" }),
 
   listMyCompany: (token: string) =>
-    apiFetch<{ items: JobPost[] }>(`/jobs/my/list`, { method: "GET", token }),
+    apiFetch<{ items: JobPost[] }>(`/jobs/my/list`, {
+      method: "GET",
+      token,
+    }),
 
-  createJob: (
-    token: string,
-    body: {
-      title: string;
-      description: string;
-      salaryFrom?: number;
-      salaryTo?: number;
-      city?: string;
-      category?: string;
-      employmentType?: "FULL_TIME" | "PART_TIME";
-      workMode?: "REMOTE" | "ONSITE" | "HYBRID";
-      experienceLevel?: "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
-      requiredSkills?: string[];
-    }
-  ) =>
+  getMyCompanyJob: (token: string, id: number) =>
+    apiFetch<{ job: JobPost }>(`/jobs/my/${id}`, {
+      method: "GET",
+      token,
+    }),
+
+  createJob: (token: string, body: {
+    title: string;
+    description: string;
+    salaryFrom?: number;
+    salaryTo?: number;
+    city?: string;
+    category?: string;
+    employmentType?: "FULL_TIME" | "PART_TIME";
+    workMode?: "REMOTE" | "ONSITE" | "HYBRID";
+    experienceLevel?: "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
+    requiredSkills?: string[];
+  }) =>
     apiFetch<{ job: JobPost }>(`/jobs`, {
       method: "POST",
       token,
       body: JSON.stringify(body),
     }),
 
-  updateJob: (token: string, id: number, body: Partial<JobPost>) =>
+  updateJob: (token: string, id: number, body: {
+    title?: string;
+    description?: string;
+    salaryFrom?: number;
+    salaryTo?: number;
+    city?: string;
+    category?: string;
+    employmentType?: "FULL_TIME" | "PART_TIME";
+    workMode?: "REMOTE" | "ONSITE" | "HYBRID";
+    experienceLevel?: "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
+    requiredSkills?: string[];
+  }) =>
     apiFetch<{ job: JobPost }>(`/jobs/${id}`, {
       method: "PATCH",
       token,
@@ -62,9 +79,19 @@ export const jobsApi = {
     }),
 
   deleteJob: (token: string, id: number) =>
-    apiFetch<void>(`/jobs/${id}`, { method: "DELETE", token }),
+    apiFetch<void>(`/jobs/${id}`, {
+      method: "DELETE",
+      token,
+    }),
 };
 
+export const companiesApi = {
+  getById: (id: number | string) =>
+    apiFetch<{ company: CompanyProfile }>(`/companies/${id}`),
+
+  getJobs: (id: number | string) =>
+    apiFetch<{ items: JobPost[] }>(`/companies/${id}/jobs`),
+};
 
 export const adminApi = {
   dashboard: (token: string) =>

@@ -2,23 +2,98 @@ import { Prisma, VacancyStatus } from "@prisma/client";
 import { prisma } from "../../prisma";
 import { listPublicJobsQuerySchema } from "./jobs.schemas";
 
-function buildRelevanceScore(job: {
-  title: string;
-  description: string;
-  requiredSkills: string[];
-  createdAt: Date;
-}, q: string) {
+function buildRelevanceScore(
+  job: {
+    title: string;
+    description: string;
+    requiredSkills: string[];
+    createdAt: Date;
+  },
+  q: string
+) {
   const query = q.toLowerCase().trim();
   if (!query) return 0;
 
   let score = 0;
-
   if (job.title.toLowerCase().includes(query)) score += 5;
   if (job.description.toLowerCase().includes(query)) score += 3;
   if (job.requiredSkills.some((skill) => skill.toLowerCase().includes(query))) score += 4;
 
   return score;
 }
+
+async function getMyCompanyProfileId(userId: number) {
+  const profile = await prisma.companyProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!profile) {
+    throw new Error("Company profile not found");
+  }
+
+  return profile.id;
+}
+
+const publicJobSelect = {
+  id: true,
+  title: true,
+  description: true,
+  salaryFrom: true,
+  salaryTo: true,
+  city: true,
+  category: true,
+  employmentType: true,
+  workMode: true,
+  experienceLevel: true,
+  requiredSkills: true,
+  status: true,
+  wasPublishedBefore: true,
+  createdAt: true,
+  updatedAt: true,
+  companyProfileId: true,
+  companyProfile: {
+    select: {
+      id: true,
+      companyName: true,
+      companyLogoUrl: true,
+      companyCity: true,
+      companyCountry: true,
+      user: {
+        select: {
+          id: true,
+          email: true,
+        },
+      },
+    },
+  },
+} as const;
+
+const companyJobSelect = {
+  id: true,
+  title: true,
+  description: true,
+  salaryFrom: true,
+  salaryTo: true,
+  city: true,
+  category: true,
+  employmentType: true,
+  workMode: true,
+  experienceLevel: true,
+  requiredSkills: true,
+  status: true,
+  wasPublishedBefore: true,
+  createdAt: true,
+  updatedAt: true,
+  companyProfileId: true,
+  companyProfile: {
+    select: {
+      id: true,
+      companyName: true,
+      companyLogoUrl: true,
+    },
+  },
+} as const;
 
 export async function listPublicJobs(rawQuery: unknown) {
   const query = listPublicJobsQuerySchema.parse(rawQuery);
@@ -50,22 +125,11 @@ export async function listPublicJobs(rawQuery: unknown) {
         }
       : {}),
 
-    ...(location
-      ? {
-          city: { contains: location, mode: "insensitive" },
-        }
-      : {}),
-
-    ...(category
-      ? {
-          category: { equals: category, mode: "insensitive" },
-        }
-      : {}),
-
+    ...(location ? { city: { contains: location, mode: "insensitive" } } : {}),
+    ...(category ? { category: { equals: category, mode: "insensitive" } } : {}),
     ...(employmentType ? { employmentType } : {}),
     ...(workMode ? { workMode } : {}),
     ...(experienceLevel ? { experienceLevel } : {}),
-
     ...(salaryMin !== undefined ? { salaryTo: { gte: salaryMin } } : {}),
     ...(salaryMax !== undefined ? { salaryFrom: { lte: salaryMax } } : {}),
   };
@@ -74,13 +138,8 @@ export async function listPublicJobs(rawQuery: unknown) {
 
   let orderBy: Prisma.VacancyOrderByWithRelationInput[] = [{ createdAt: "desc" }];
 
-  if (sort === "salary_asc") {
-    orderBy = [{ salaryFrom: "asc" }, { createdAt: "desc" }];
-  }
-
-  if (sort === "salary_desc") {
-    orderBy = [{ salaryTo: "desc" }, { createdAt: "desc" }];
-  }
+  if (sort === "salary_asc") orderBy = [{ salaryFrom: "asc" }, { createdAt: "desc" }];
+  if (sort === "salary_desc") orderBy = [{ salaryTo: "desc" }, { createdAt: "desc" }];
 
   const [total, rows] = await Promise.all([
     prisma.vacancy.count({ where }),
@@ -89,28 +148,7 @@ export async function listPublicJobs(rawQuery: unknown) {
       orderBy,
       skip,
       take: pageSize,
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        salaryFrom: true,
-        salaryTo: true,
-        city: true,
-        category: true,
-        employmentType: true,
-        workMode: true,
-        experienceLevel: true,
-        requiredSkills: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        company: {
-          select: {
-            id: true,
-            email: true,
-          },
-        },
-      },
+      select: publicJobSelect,
     }),
   ]);
 
@@ -124,38 +162,34 @@ export async function listPublicJobs(rawQuery: unknown) {
     });
   }
 
-  return {
-    data,
-    page,
-    pageSize,
-    total,
-  };
+  return { data, page, pageSize, total };
 }
 
-export function getJobById(id: number) {
-  return prisma.vacancy.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      salaryFrom: true,
-      salaryTo: true,
-      city: true,
-      category: true,
-      employmentType: true,
-      workMode: true,
-      experienceLevel: true,
-      requiredSkills: true,
-      status: true,
-      createdAt: true,
-      companyId: true,
-      company: { select: { id: true, email: true } },
+export async function getPublicJobById(id: number) {
+  return prisma.vacancy.findFirst({
+    where: {
+      id,
+      status: VacancyStatus.APPROVED,
     },
+    select: publicJobSelect,
   });
 }
 
-export function createJob(companyId: number, data: any) {
+export async function getMyJobById(userId: number, id: number) {
+  const companyProfileId = await getMyCompanyProfileId(userId);
+
+  return prisma.vacancy.findFirst({
+    where: {
+      id,
+      companyProfileId,
+    },
+    select: companyJobSelect,
+  });
+}
+
+export async function createJob(userId: number, data: any) {
+  const companyProfileId = await getMyCompanyProfileId(userId);
+
   return prisma.vacancy.create({
     data: {
       title: data.title,
@@ -168,70 +202,70 @@ export function createJob(companyId: number, data: any) {
       workMode: data.workMode,
       experienceLevel: data.experienceLevel,
       requiredSkills: data.requiredSkills ?? [],
-      companyId,
+      companyProfileId,
       status: VacancyStatus.PENDING,
+      wasPublishedBefore: false,
     },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      salaryFrom: true,
-      salaryTo: true,
-      city: true,
-      category: true,
-      employmentType: true,
-      workMode: true,
-      experienceLevel: true,
-      requiredSkills: true,
-      status: true,
-      createdAt: true,
-      companyId: true,
-    },
+    select: companyJobSelect,
   });
 }
 
-export async function updateJob(companyId: number, id: number, data: any) {
-  const existing = await prisma.vacancy.findUnique({ where: { id } });
+export async function updateJob(userId: number, id: number, data: any) {
+  const companyProfileId = await getMyCompanyProfileId(userId);
+
+  const existing = await prisma.vacancy.findUnique({
+    where: { id },
+  });
+
   if (!existing) return null;
-  if (existing.companyId !== companyId) return "FORBIDDEN";
+  if (existing.companyProfileId !== companyProfileId) return "FORBIDDEN";
+
+  const shouldReturnToPending = existing.status === VacancyStatus.APPROVED;
 
   return prisma.vacancy.update({
     where: { id },
     data: {
-      ...data,
+      title: data.title ?? undefined,
+      description: data.description ?? undefined,
+      salaryFrom: data.salaryFrom ?? undefined,
+      salaryTo: data.salaryTo ?? undefined,
+      city: data.city ?? undefined,
+      category: data.category ?? undefined,
+      employmentType: data.employmentType ?? undefined,
+      workMode: data.workMode ?? undefined,
+      experienceLevel: data.experienceLevel ?? undefined,
       requiredSkills: data.requiredSkills ?? undefined,
+      status: shouldReturnToPending ? VacancyStatus.PENDING : existing.status,
+      wasPublishedBefore: shouldReturnToPending ? true : existing.wasPublishedBefore,
     },
-    select: {
-      id: true,
-      title: true,
-      description: true,
-      salaryFrom: true,
-      salaryTo: true,
-      city: true,
-      category: true,
-      employmentType: true,
-      workMode: true,
-      experienceLevel: true,
-      requiredSkills: true,
-      status: true,
-      updatedAt: true,
-    },
+    select: companyJobSelect,
   });
 }
 
-export async function deleteJob(companyId: number, id: number) {
-  const existing = await prisma.vacancy.findUnique({ where: { id } });
-  if (!existing) return null;
-  if (existing.companyId !== companyId) return "FORBIDDEN";
+export async function deleteJob(userId: number, id: number) {
+  const companyProfileId = await getMyCompanyProfileId(userId);
 
-  await prisma.vacancy.delete({ where: { id } });
+  const existing = await prisma.vacancy.findUnique({
+    where: { id },
+  });
+
+  if (!existing) return null;
+  if (existing.companyProfileId !== companyProfileId) return "FORBIDDEN";
+
+  await prisma.vacancy.delete({
+    where: { id },
+  });
+
   return true;
 }
 
-export function listMyJobs(companyId: number) {
+export async function listMyJobs(userId: number) {
+  const companyProfileId = await getMyCompanyProfileId(userId);
+
   return prisma.vacancy.findMany({
-    where: { companyId },
+    where: { companyProfileId },
     orderBy: { createdAt: "desc" },
+    select: companyJobSelect,
   });
 }
 
@@ -239,5 +273,6 @@ export async function setJobStatus(id: number, status: VacancyStatus) {
   return prisma.vacancy.update({
     where: { id },
     data: { status },
+    select: publicJobSelect,
   });
 }

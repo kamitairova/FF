@@ -1,173 +1,313 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import { jobsApi } from "../../api/endpoints";
-import { useAuth } from "../../auth/AuthProvider";
 import { Input } from "../../components/Input";
-import { Textarea } from "../../components/Textarea";
 import { Select } from "../../components/Select";
 import { Button } from "../../components/Button";
-import { Spinner } from "../../components/Spinner";
-import { Centered } from "../../components/Centered";
-import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../auth/AuthProvider";
 import "../../components/ui.css";
 
-type Props = { mode: "create" | "edit" };
-
-const empty = {
-  title: "",
-  description: "",
-  location: "",
-  salaryMin: "",
-  salaryMax: "",
-  employmentType: "full",
-  workMode: "remote",
-  experienceLevel: "middle",
-  requiredSkillsText: "react, typescript"
+type FormState = {
+  title: string;
+  description: string;
+  city: string;
+  category: string;
+  salaryFrom: string;
+  salaryTo: string;
+  employmentType: string;
+  workMode: string;
+  experienceLevel: string;
+  requiredSkills: string;
 };
 
-export function CompanyJobEditorPage({ mode }: Props) {
-  const { token } = useAuth();
-  const nav = useNavigate();
-  const { jobId } = useParams();
-  const [m, setM] = useState({ ...empty });
-  const [msg, setMsg] = useState<string | null>(null);
+const initialState: FormState = {
+  title: "",
+  description: "",
+  city: "",
+  category: "",
+  salaryFrom: "",
+  salaryTo: "",
+  employmentType: "FULL_TIME",
+  workMode: "ONSITE",
+  experienceLevel: "JUNIOR",
+  requiredSkills: "",
+};
 
-  // For edit mode we try to fetch through company list and find job
-  const companyJobs = useQuery({
-    queryKey: ["companyJobs"],
-    queryFn: () => jobsApi.listCompany(token!),
-    enabled: !!token
-  });
+const categories = [
+  "Frontend",
+  "Backend",
+  "Fullstack",
+  "Design",
+  "QA",
+  "DevOps",
+  "Mobile",
+  "Sales",
+  "Marketing",
+];
+
+export default function CompanyJobEditorPage() {
+  const { jobId } = useParams();
+  const isEdit = Boolean(jobId);
+  const nav = useNavigate();
+  const { token } = useAuth();
+
+  const [form, setForm] = useState<FormState>(initialState);
+  const [loading, setLoading] = useState(isEdit);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (mode === "edit" && companyJobs.data && jobId) {
-      const j = companyJobs.data.data.find((x) => x.id === jobId);
-      if (j) {
-        setM({
-          title: j.title ?? "",
-          description: j.description ?? "",
-          location: j.location ?? "",
-          salaryMin: j.salaryMin ? String(j.salaryMin) : "",
-          salaryMax: j.salaryMax ? String(j.salaryMax) : "",
-          employmentType: (j.employmentType as any) ?? "full",
-          workMode: (j.workMode as any) ?? "remote",
-          experienceLevel: (j.experienceLevel as any) ?? "middle",
-          requiredSkillsText: (j.requiredSkills ?? []).join(", ")
+    if (!isEdit || !jobId) return;
+
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const res = await jobsApi.getMyCompanyJob(token!, jobId);
+
+        setForm({
+          title: res.job.title ?? "",
+          description: res.job.description ?? "",
+          city: res.job.city ?? "",
+          category: res.job.category ?? "",
+          salaryFrom: res.job.salaryFrom ? String(res.job.salaryFrom) : "",
+          salaryTo: res.job.salaryTo ? String(res.job.salaryTo) : "",
+          employmentType: res.job.employmentType ?? "FULL_TIME",
+          workMode: res.job.workMode ?? "ONSITE",
+          experienceLevel: res.job.experienceLevel ?? "JUNIOR",
+          requiredSkills: Array.isArray(res.job.requiredSkills)
+            ? res.job.requiredSkills.join(", ")
+            : "",
         });
+      } catch (e: any) {
+        setError(e?.message || "Не удалось загрузить вакансию");
+      } finally {
+        setLoading(false);
       }
+    };
+
+    load();
+  }, [isEdit, jobId]);
+
+  const skillsPreview = useMemo(
+    () =>
+      form.requiredSkills
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 8),
+    [form.requiredSkills]
+  );
+
+  const onChange =
+    (key: keyof FormState) =>
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ) => {
+      setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    };
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!token) {
+      setError("Войдите в аккаунт компании");
+      return;
     }
-  }, [mode, companyJobs.data, jobId]);
 
-  const mut = useMutation({
-    mutationFn: async () => {
-      const body = {
-        title: m.title.trim(),
-        description: m.description.trim(),
-        location: m.location.trim(),
-        salaryMin: m.salaryMin ? Number(m.salaryMin) : null,
-        salaryMax: m.salaryMax ? Number(m.salaryMax) : null,
-        employmentType: m.employmentType,
-        workMode: m.workMode,
-        experienceLevel: m.experienceLevel,
-        requiredSkills: m.requiredSkillsText.split(",").map(s => s.trim()).filter(Boolean),
-        categoryId: null,
-        tagIds: []
+    try {
+      setSaving(true);
+      setError("");
+
+      const payload = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        city: form.city.trim(),
+        category: form.category.trim(),
+        salaryFrom: form.salaryFrom ? Number(form.salaryFrom) : undefined,
+        salaryTo: form.salaryTo ? Number(form.salaryTo) : undefined,
+        employmentType: form.employmentType,
+        workMode: form.workMode,
+        experienceLevel: form.experienceLevel,
+        requiredSkills: form.requiredSkills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
       };
-      if (mode === "create") return jobsApi.createCompany(token!, body);
-      return jobsApi.updateCompany(token!, jobId!, body);
-    },
-    onSuccess: (d: any) => {
-      setMsg("Сохранено. Статус может быть PENDING до модерации.");
-      nav("/company/jobs");
-    },
-    onError: (e: any) => setMsg(e?.message ?? "Не удалось сохранить.")
-  });
 
-  if (mode === "edit" && companyJobs.isLoading) return <Centered><Spinner /></Centered>;
-  if (mode === "edit" && companyJobs.isError) return <Centered title="Ошибка">{(companyJobs.error as any)?.message ?? "Не удалось загрузить данные."}</Centered>;
+      if (isEdit && jobId) {
+        await jobsApi.updateJob(token!, jobId, payload);
+      } else {
+        await jobsApi.createJob(token!, payload);
+      }
+
+      nav("/company/jobs");
+    } catch (e: any) {
+      setError(e?.message || "Не удалось сохранить вакансию");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="editor-page">
+        <div className="surface card-pad">Загрузка...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid" style={{ gap: 14 }}>
-      <div className="surface card-pad">
-        <div className="split">
-          <div>
-            <h1 className="h1">{mode === "create" ? "Создать вакансию" : "Редактировать вакансию"}</h1>
-            <p className="p" style={{ marginTop: 6 }}>
-              Поля соответствуют ТЗ (title, description, location, salary range, type, mode, skills, experience).
-            </p>
-          </div>
-          <div className="toolbar">
-            <Button onClick={() => nav("/company/jobs")}>Назад</Button>
-            <Button variant="primary" disabled={mut.isPending} onClick={() => mut.mutate()}>
-              {mut.isPending ? "Сохранение…" : "Сохранить"}
-            </Button>
-          </div>
+    <div className="editor-page">
+      <form className="editor-full" onSubmit={onSubmit}>
+        <div className="surface card-pad editor-section">
+          <h1 className="h1">
+            {isEdit ? "Редактирование вакансии" : "Создание вакансии"}
+          </h1>
+
+          {error && (
+            <div className="editor-alert" style={{ marginTop: 12 }}>
+              {error}
+            </div>
+          )}
         </div>
 
-        <div className="hr" style={{ margin: "14px 0" }} />
+        {/* ОСНОВНОЕ */}
+        <section className="surface card-pad editor-section">
+          <h2 className="editor-section-title">Основная информация</h2>
 
-        <div className="grid grid-2">
-          <div>
-            <label className="label">Название</label>
-            <Input value={m.title} onChange={(e) => setM({ ...m, title: e.target.value })} />
-          </div>
-          <div>
-            <label className="label">Локация</label>
-            <Input value={m.location} onChange={(e) => setM({ ...m, location: e.target.value })} />
-          </div>
-
-          <div className="grid grid-2" style={{ gridColumn: "1 / -1" }}>
+          <div className="editor-fields">
             <div>
-              <label className="label">Зарплата min</label>
-              <Input inputMode="numeric" value={m.salaryMin} onChange={(e) => setM({ ...m, salaryMin: e.target.value.replace(/\D/g,"") })} />
+              <label className="label">Название вакансии</label>
+              <Input
+                placeholder="Frontend Developer"
+                value={form.title}
+                onChange={onChange("title")}
+              />
             </div>
+
+            <div className="editor-two">
+              <div>
+                <label className="label">Город</label>
+                <Input
+                  placeholder="Bishkek"
+                  value={form.city}
+                  onChange={onChange("city")}
+                />
+              </div>
+
+              <div>
+                <label className="label">Категория</label>
+                <Select value={form.category} onChange={onChange("category")}>
+                  <option value="">Выбери</option>
+                  {categories.map((c) => (
+                    <option key={c}>{c}</option>
+                  ))}
+                </Select>
+              </div>
+            </div>
+
             <div>
-              <label className="label">Зарплата max</label>
-              <Input inputMode="numeric" value={m.salaryMax} onChange={(e) => setM({ ...m, salaryMax: e.target.value.replace(/\D/g,"") })} />
+              <label className="label">Описание</label>
+              <textarea
+                className="editor-textarea"
+                placeholder="Опишите вакансию..."
+                value={form.description}
+                onChange={onChange("description")}
+              />
             </div>
           </div>
+        </section>
 
-          <div>
-            <label className="label">Формат работы</label>
-            <Select value={m.workMode} onChange={(e) => setM({ ...m, workMode: e.target.value })}>
-              <option value="remote">remote</option>
-              <option value="onsite">onsite</option>
-              <option value="hybrid">hybrid</option>
-            </Select>
-          </div>
+        {/* УСЛОВИЯ */}
+        <section className="surface card-pad editor-section">
+          <h2 className="editor-section-title">Условия</h2>
 
-          <div>
-            <label className="label">Занятость</label>
-            <Select value={m.employmentType} onChange={(e) => setM({ ...m, employmentType: e.target.value })}>
-              <option value="full">full</option>
-              <option value="part">part</option>
-            </Select>
-          </div>
+          <div className="editor-fields">
+            <div className="editor-three">
+              <div>
+                <label className="label">Занятость</label>
+                <Select
+                  value={form.employmentType}
+                  onChange={onChange("employmentType")}
+                >
+                  <option value="FULL_TIME">Full-time</option>
+                  <option value="PART_TIME">Part-time</option>
+                </Select>
+              </div>
 
-          <div>
-            <label className="label">Уровень</label>
-            <Select value={m.experienceLevel} onChange={(e) => setM({ ...m, experienceLevel: e.target.value })}>
-              <option value="intern">intern</option>
-              <option value="junior">junior</option>
-              <option value="middle">middle</option>
-              <option value="senior">senior</option>
-              <option value="lead">lead</option>
-            </Select>
-          </div>
+              <div>
+                <label className="label">Формат</label>
+                <Select value={form.workMode} onChange={onChange("workMode")}>
+                  <option value="ONSITE">On-site</option>
+                  <option value="REMOTE">Remote</option>
+                  <option value="HYBRID">Hybrid</option>
+                </Select>
+              </div>
 
-          <div style={{ gridColumn: "1 / -1" }}>
-            <label className="label">Навыки (requiredSkills через запятую)</label>
-            <Input value={m.requiredSkillsText} onChange={(e) => setM({ ...m, requiredSkillsText: e.target.value })} />
-          </div>
+              <div>
+                <label className="label">Опыт</label>
+                <Select
+                  value={form.experienceLevel}
+                  onChange={onChange("experienceLevel")}
+                >
+                  <option value="JUNIOR">Junior</option>
+                  <option value="MIDDLE">Middle</option>
+                  <option value="SENIOR">Senior</option>
+                </Select>
+              </div>
+            </div>
 
-          <div style={{ gridColumn: "1 / -1" }}>
-            <label className="label">Описание</label>
-            <Textarea value={m.description} onChange={(e) => setM({ ...m, description: e.target.value })} />
+            <div className="editor-two">
+              <div>
+                <label className="label">ЗП от</label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={form.salaryFrom}
+                  onChange={onChange("salaryFrom")}
+                />
+              </div>
+
+              <div>
+                <label className="label">ЗП до</label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={50}
+                  value={form.salaryTo}
+                  onChange={onChange("salaryTo")}
+                />
+              </div>
+            </div>
           </div>
+        </section>
+
+        {/* НАВЫКИ */}
+        <section className="surface card-pad editor-section">
+          <h2 className="editor-section-title">Навыки</h2>
+
+          <Input
+            placeholder="React, TypeScript"
+            value={form.requiredSkills}
+            onChange={onChange("requiredSkills")}
+          />
+        </section>
+
+        {/* КНОПКИ */}
+        <div className="surface card-pad editor-submit-row">
+          <Button onClick={() => nav("/company/jobs")}>Отмена</Button>
+
+          <Button variant="primary" type="submit" disabled={saving}>
+            {saving
+              ? "Сохранение..."
+              : isEdit
+              ? "Сохранить"
+              : "Создать"}
+          </Button>
         </div>
-
-        {msg && <div className="small" style={{ marginTop: 10, fontWeight: 800 }}>{msg}</div>}
-      </div>
+      </form>
     </div>
-  );
+);
 }

@@ -1,221 +1,360 @@
-import { PrismaClient, Role, VacancyStatus, EmploymentType, WorkMode, ExperienceLevel } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  VacancyStatus,
+  EmploymentType,
+  WorkMode,
+  ExperienceLevel,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+async function upsertCompanyWithProfile(params: {
+  email: string;
+  passwordHash: string;
+  profile: {
+    companyName: string;
+    companyLogoUrl?: string;
+    companyShortDescription?: string;
+    companyDescription?: string;
+    companyWebsite?: string;
+    companyPhone?: string;
+    companyCity?: string;
+    companyCountry?: string;
+  };
+  photos?: string[];
+}) {
+  const user = await prisma.user.upsert({
+    where: { email: params.email },
+    update: {
+      password: params.passwordHash,
+      role: Role.COMPANY,
+      isDisabled: false,
+    },
+    create: {
+      email: params.email,
+      password: params.passwordHash,
+      role: Role.COMPANY,
+      isDisabled: false,
+    },
+  });
+
+  const companyProfile = await prisma.companyProfile.upsert({
+    where: { userId: user.id },
+    update: {
+      companyName: params.profile.companyName,
+      companyLogoUrl: params.profile.companyLogoUrl ?? null,
+      companyShortDescription: params.profile.companyShortDescription ?? null,
+      companyDescription: params.profile.companyDescription ?? null,
+      companyWebsite: params.profile.companyWebsite ?? null,
+      companyPhone: params.profile.companyPhone ?? null,
+      companyCity: params.profile.companyCity ?? null,
+      companyCountry: params.profile.companyCountry ?? null,
+    },
+    create: {
+      userId: user.id,
+      companyName: params.profile.companyName,
+      companyLogoUrl: params.profile.companyLogoUrl ?? null,
+      companyShortDescription: params.profile.companyShortDescription ?? null,
+      companyDescription: params.profile.companyDescription ?? null,
+      companyWebsite: params.profile.companyWebsite ?? null,
+      companyPhone: params.profile.companyPhone ?? null,
+      companyCity: params.profile.companyCity ?? null,
+      companyCountry: params.profile.companyCountry ?? null,
+    },
+  });
+
+  await prisma.companyPhoto.deleteMany({
+    where: { companyProfileId: companyProfile.id },
+  });
+
+  if (params.photos?.length) {
+    await prisma.companyPhoto.createMany({
+      data: params.photos.map((imageUrl, index) => ({
+        companyProfileId: companyProfile.id,
+        imageUrl,
+        sortOrder: index,
+      })),
+    });
+  }
+
+  return { user, companyProfile };
+}
+
 async function main() {
   const passwordHash = await bcrypt.hash("12345678", 10);
+  const adminPasswordHash = await bcrypt.hash("admin12345", 10);
+
+  await prisma.user.upsert({
+    where: { email: "admin@example.com" },
+    update: {
+      password: adminPasswordHash,
+      role: Role.ADMIN,
+      isDisabled: false,
+    },
+    create: {
+      email: "admin@example.com",
+      password: adminPasswordHash,
+      role: Role.ADMIN,
+      isDisabled: false,
+    },
+  });
 
   const companies = [
     {
       email: "test2@example.com",
-      password: passwordHash,
-      role: Role.COMPANY,
+      profile: {
+        companyName: "NovaTech Studio",
+        companyLogoUrl:
+          "https://images.unsplash.com/photo-1558655146-9f40138edfeb?auto=format&fit=crop&w=400&q=80",
+        companyShortDescription:
+          "Product company building modern web platforms and internal business systems.",
+        companyDescription:
+          "NovaTech Studio develops modern digital products for businesses in Central Asia. We build internal dashboards, CRM systems, public websites, and scalable web applications. Our team works with React, TypeScript, Node.js, and PostgreSQL.",
+        companyWebsite: "https://novatech.example.com",
+        companyPhone: "+996700112233",
+        companyCity: "Bishkek",
+        companyCountry: "Kyrgyzstan",
+      },
+      photos: [
+        "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1200&q=80",
+        "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=1200&q=80",
+      ],
     },
     {
       email: "test3@example.com",
-      password: passwordHash,
-      role: Role.COMPANY,
+      profile: {
+        companyName: "FinAxis Group",
+        companyLogoUrl:
+          "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=400&q=80",
+        companyShortDescription:
+          "Finance and operations company focused on reporting and support.",
+        companyDescription:
+          "FinAxis Group helps companies manage accounting, business reporting, support operations, and process control.",
+        companyWebsite: "https://finaxis.example.com",
+        companyPhone: "+996555446688",
+        companyCity: "Bishkek",
+        companyCountry: "Kyrgyzstan",
+      },
+      photos: [
+        "https://images.unsplash.com/photo-1556740749-887f6717d7e4?auto=format&fit=crop&w=1200&q=80",
+      ],
     },
     {
       email: "test4@example.com",
-      password: passwordHash,
-      role: Role.COMPANY,
+      profile: {
+        companyName: "PeopleFirst Hub",
+        companyLogoUrl:
+          "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=400&q=80",
+        companyShortDescription:
+          "HR, education, and service brand focused on people and communication.",
+        companyDescription:
+          "PeopleFirst Hub works in recruitment, education, and hospitality-related hiring.",
+        companyWebsite: "https://peoplefirst.example.com",
+        companyPhone: "+77775544221",
+        companyCity: "Almaty",
+        companyCountry: "Kazakhstan",
+      },
+      photos: [
+        "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80",
+      ],
+    },
+    {
+      email: "test5@example.com",
+      profile: {
+        companyName: "MarketFlow Media",
+        companyLogoUrl:
+          "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=400&q=80",
+        companyShortDescription:
+          "Creative marketing team focused on content, design, and audience growth.",
+        companyDescription:
+          "MarketFlow Media develops content strategies, social media campaigns, visuals, and brand communication.",
+        companyWebsite: "https://marketflow.example.com",
+        companyPhone: "+996705901212",
+        companyCity: "Bishkek",
+        companyCountry: "Kyrgyzstan",
+      },
+      photos: [
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1200&q=80",
+      ],
     },
   ];
 
+  const createdCompanies = [];
   for (const company of companies) {
-    await prisma.user.upsert({
-      where: { email: company.email },
-      update: {},
-      create: company,
+    const created = await upsertCompanyWithProfile({
+      email: company.email,
+      passwordHash,
+      profile: company.profile,
+      photos: company.photos,
     });
+    createdCompanies.push(created);
   }
 
-  const company2 = await prisma.user.findUniqueOrThrow({
-    where: { email: "test2@example.com" },
-  });
+  const companyByEmail = new Map(
+    createdCompanies.map((item) => [item.user.email, item.companyProfile])
+  );
 
-  const company3 = await prisma.user.findUniqueOrThrow({
-    where: { email: "test3@example.com" },
-  });
-
-  const company4 = await prisma.user.findUniqueOrThrow({
-    where: { email: "test4@example.com" },
-  });
+  const profile2 = companyByEmail.get("test2@example.com")!;
+  const profile3 = companyByEmail.get("test3@example.com")!;
+  const profile4 = companyByEmail.get("test4@example.com")!;
+  const profile5 = companyByEmail.get("test5@example.com")!;
 
   await prisma.vacancy.deleteMany({
     where: {
-      companyId: {
-        in: [company2.id, company3.id, company4.id],
+      companyProfileId: {
+        in: [profile2.id, profile3.id, profile4.id, profile5.id],
       },
     },
   });
 
-  const vacancies = [
-    {
-      companyId: company2.id,
-      title: "Frontend Developer (React)",
-      description:
-        "We are looking for a frontend developer who can build clean and responsive user interfaces for a modern web platform. You will work with React, TypeScript and REST APIs, communicate with the backend team, improve usability, and help implement new features. We expect attention to detail, good knowledge of component-based architecture, and the ability to work with layouts and forms.",
-      salaryFrom: 1200,
-      salaryTo: 2000,
-      city: "Bishkek",
-      category: "Frontend",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.REMOTE,
-      experienceLevel: ExperienceLevel.JUNIOR,
-      requiredSkills: ["React", "TypeScript", "CSS", "HTML"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company2.id,
-      title: "Sales Manager",
-      description:
-        "Our company is searching for a sales manager who can communicate with clients, present services, negotiate conditions, and maintain long-term business relationships. The specialist will handle incoming leads, work with the client database, prepare offers, and help increase sales volume. Experience in communication, confidence, and the ability to understand customer needs are important for this role.",
-      salaryFrom: 800,
-      salaryTo: 1400,
-      city: "Bishkek",
-      category: "Sales",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.ONSITE,
-      experienceLevel: ExperienceLevel.JUNIOR,
-      requiredSkills: ["Communication", "Negotiation", "CRM", "Sales"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company2.id,
-      title: "Graphic Designer",
-      description:
-        "We need a graphic designer to prepare visual materials for social media, marketing campaigns, banners, presentations, and promotional products. You will work closely with the marketing team, adapt visuals for different platforms, and maintain a consistent visual style. Creativity, strong composition skills, and confidence with design tools are required.",
-      salaryFrom: 900,
-      salaryTo: 1500,
-      city: "Bishkek",
-      category: "Design",
-      employmentType: EmploymentType.PART_TIME,
-      workMode: WorkMode.HYBRID,
-      experienceLevel: ExperienceLevel.JUNIOR,
-      requiredSkills: ["Photoshop", "Illustrator", "Branding", "Creativity"],
-      status: VacancyStatus.APPROVED,
-    },
-
-    {
-      companyId: company3.id,
-      title: "Backend Developer (Node.js)",
-      description:
-        "We are hiring a backend developer to build and maintain APIs, work with a PostgreSQL database, integrate third-party services, and improve the reliability of the server side of our application. You will participate in designing business logic, optimizing queries, and supporting production features. A solid understanding of Node.js, Express and database design is expected.",
-      salaryFrom: 1500,
-      salaryTo: 2600,
-      city: "Bishkek",
-      category: "Backend",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.ONSITE,
-      experienceLevel: ExperienceLevel.MIDDLE,
-      requiredSkills: ["Node.js", "Express", "PostgreSQL", "Docker"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company3.id,
-      title: "Accountant",
-      description:
-        "We are looking for an accountant who will manage financial documentation, prepare reports, monitor expenses and income, and keep records accurate and up to date. The candidate should understand accounting procedures, work carefully with numbers, and be able to prepare internal financial summaries for management. Responsibility and accuracy are essential for this position.",
-      salaryFrom: 700,
-      salaryTo: 1200,
-      city: "Bishkek",
-      category: "Finance",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.ONSITE,
-      experienceLevel: ExperienceLevel.MIDDLE,
-      requiredSkills: ["Accounting", "1C", "Excel", "Reporting"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company3.id,
-      title: "Customer Support Specialist",
-      description:
-        "The support specialist will communicate with clients, answer questions, solve service-related issues, and help users navigate the platform. You will process messages, clarify requests, and provide polite and timely assistance. We value patience, грамотная communication, and readiness to work with different types of customers in a fast-paced environment.",
-      salaryFrom: 600,
-      salaryTo: 1000,
-      city: "Osh",
-      category: "Support",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.HYBRID,
-      experienceLevel: ExperienceLevel.JUNIOR,
-      requiredSkills: ["Communication", "Support", "Problem Solving", "CRM"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company3.id,
-      title: "English Teacher",
-      description:
-        "We are seeking an English teacher who can conduct lessons for teenagers and adults, prepare teaching materials, explain grammar clearly, and maintain student motivation. The role includes lesson planning, checking assignments, and adapting classes to different language levels. Teaching experience, clear pronunciation, and structured communication are important.",
-      salaryFrom: 500,
-      salaryTo: 1100,
-      city: "Bishkek",
-      category: "Education",
-      employmentType: EmploymentType.PART_TIME,
-      workMode: WorkMode.ONSITE,
-      experienceLevel: ExperienceLevel.MIDDLE,
-      requiredSkills: ["English", "Teaching", "Communication", "Lesson Planning"],
-      status: VacancyStatus.APPROVED,
-    },
-
-    {
-      companyId: company4.id,
-      title: "HR Manager",
-      description:
-        "The HR manager will help with recruiting, initial communication with candidates, interview coordination, adaptation of new employees, and support of internal company processes. You will work with vacancies, candidate databases, and team communication. We are looking for a person with strong organizational skills, empathy, and the ability to evaluate people professionally.",
-      salaryFrom: 900,
-      salaryTo: 1600,
-      city: "Almaty",
-      category: "HR",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.HYBRID,
-      experienceLevel: ExperienceLevel.MIDDLE,
-      requiredSkills: ["Recruitment", "Interviewing", "Communication", "HR"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company4.id,
-      title: "Barista",
-      description:
-        "We are looking for a barista who can prepare coffee drinks, maintain cleanliness in the working area, interact politely with guests, and ensure a pleasant customer experience. You will work with coffee equipment, prepare beverages according to recipes, handle orders, and support the daily workflow of the coffee shop. Friendliness, speed, and responsibility are important for this role.",
-      salaryFrom: 400,
-      salaryTo: 700,
-      city: "Bishkek",
-      category: "Service",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.ONSITE,
-      experienceLevel: ExperienceLevel.INTERN,
-      requiredSkills: ["Coffee", "Customer Service", "Teamwork", "Cleanliness"],
-      status: VacancyStatus.APPROVED,
-    },
-    {
-      companyId: company4.id,
-      title: "SMM Manager",
-      description:
-        "The SMM manager will create content plans, publish posts, communicate with the audience, analyze engagement, and help develop the brand on social media platforms. You will work with text, visuals, and promotion ideas, coordinate with designers, and monitor campaign performance. Creativity, consistency, and understanding of social media trends are important.",
-      salaryFrom: 700,
-      salaryTo: 1300,
-      city: "Bishkek",
-      category: "Marketing",
-      employmentType: EmploymentType.FULL_TIME,
-      workMode: WorkMode.REMOTE,
-      experienceLevel: ExperienceLevel.JUNIOR,
-      requiredSkills: ["SMM", "Content Creation", "Copywriting", "Analytics"],
-      status: VacancyStatus.APPROVED,
-    },
-  ];
-
   await prisma.vacancy.createMany({
-    data: vacancies,
+    data: [
+      {
+        companyProfileId: profile2.id,
+        title: "Frontend Developer (React)",
+        description: "Build modern interfaces with React and TypeScript.",
+        salaryFrom: 1200,
+        salaryTo: 2000,
+        city: "Bishkek",
+        category: "Frontend",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.REMOTE,
+        experienceLevel: ExperienceLevel.JUNIOR,
+        requiredSkills: ["React", "TypeScript", "CSS", "HTML"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile2.id,
+        title: "Backend Developer (Node.js)",
+        description: "Build APIs and work with PostgreSQL and Docker.",
+        salaryFrom: 1500,
+        salaryTo: 2600,
+        city: "Bishkek",
+        category: "Backend",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.HYBRID,
+        experienceLevel: ExperienceLevel.MIDDLE,
+        requiredSkills: ["Node.js", "Express", "PostgreSQL", "Docker"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile2.id,
+        title: "UI/UX Designer",
+        description: "Design dashboards, forms, and clean product interfaces.",
+        salaryFrom: 1000,
+        salaryTo: 1700,
+        city: "Bishkek",
+        category: "Design",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.HYBRID,
+        experienceLevel: ExperienceLevel.JUNIOR,
+        requiredSkills: ["Figma", "UI", "UX", "Prototyping"],
+        status: VacancyStatus.PENDING,
+      },
+      {
+        companyProfileId: profile3.id,
+        title: "Accountant",
+        description: "Manage accounting records and prepare financial reports.",
+        salaryFrom: 700,
+        salaryTo: 1200,
+        city: "Bishkek",
+        category: "Finance",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.ONSITE,
+        experienceLevel: ExperienceLevel.MIDDLE,
+        requiredSkills: ["Accounting", "1C", "Excel", "Reporting"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile3.id,
+        title: "Customer Support Specialist",
+        description: "Help clients and solve service-related issues.",
+        salaryFrom: 600,
+        salaryTo: 1000,
+        city: "Osh",
+        category: "Support",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.HYBRID,
+        experienceLevel: ExperienceLevel.JUNIOR,
+        requiredSkills: ["Communication", "Support", "CRM"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile4.id,
+        title: "HR Manager",
+        description: "Coordinate recruiting and communication with candidates.",
+        salaryFrom: 900,
+        salaryTo: 1600,
+        city: "Almaty",
+        category: "HR",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.HYBRID,
+        experienceLevel: ExperienceLevel.MIDDLE,
+        requiredSkills: ["Recruitment", "Interviewing", "Communication"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile4.id,
+        title: "English Teacher",
+        description: "Teach English to teenagers and adults.",
+        salaryFrom: 500,
+        salaryTo: 1100,
+        city: "Bishkek",
+        category: "Education",
+        employmentType: EmploymentType.PART_TIME,
+        workMode: WorkMode.ONSITE,
+        experienceLevel: ExperienceLevel.MIDDLE,
+        requiredSkills: ["English", "Teaching", "Lesson Planning"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile4.id,
+        title: "Barista",
+        description: "Prepare coffee and provide friendly customer service.",
+        salaryFrom: 400,
+        salaryTo: 700,
+        city: "Bishkek",
+        category: "Service",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.ONSITE,
+        experienceLevel: ExperienceLevel.INTERN,
+        requiredSkills: ["Coffee", "Customer Service", "Teamwork"],
+        status: VacancyStatus.PENDING,
+      },
+      {
+        companyProfileId: profile5.id,
+        title: "SMM Manager",
+        description: "Create content plans and manage audience engagement.",
+        salaryFrom: 700,
+        salaryTo: 1300,
+        city: "Bishkek",
+        category: "Marketing",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.REMOTE,
+        experienceLevel: ExperienceLevel.JUNIOR,
+        requiredSkills: ["SMM", "Content", "Copywriting", "Analytics"],
+        status: VacancyStatus.APPROVED,
+      },
+      {
+        companyProfileId: profile5.id,
+        title: "Sales Manager",
+        description: "Work with clients and help grow sales volume.",
+        salaryFrom: 800,
+        salaryTo: 1400,
+        city: "Bishkek",
+        category: "Sales",
+        employmentType: EmploymentType.FULL_TIME,
+        workMode: WorkMode.ONSITE,
+        experienceLevel: ExperienceLevel.JUNIOR,
+        requiredSkills: ["Communication", "Negotiation", "CRM", "Sales"],
+        status: VacancyStatus.APPROVED,
+      },
+    ],
   });
 
   console.log("Seed completed successfully.");
-  console.log("Companies created:");
-  console.log("test2@example.com / 12345678");
-  console.log("test3@example.com / 12345678");
-  console.log("test4@example.com / 12345678");
 }
 
 main()

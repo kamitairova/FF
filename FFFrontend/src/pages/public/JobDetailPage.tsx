@@ -30,7 +30,7 @@ export function JobDetailPage() {
     enabled: hasValidId,
   });
 
-  const canSeeker = !!token && me?.role === "JOB_SEEKER";
+  const canSeeker = !!token && me?.role === "USER";
 
   if (!hasValidId) {
     return <Centered title="Ошибка">Некорректный id вакансии</Centered>;
@@ -44,6 +44,12 @@ export function JobDetailPage() {
   );
 
   const job = q.data!.job;
+  const companyName =
+  job.companyProfile?.companyName?.trim() ||
+  job.companyProfile?.user?.email ||
+  "Компания";
+
+  const companyProfileId = job.companyProfile?.id;
 
   return (
     <div className="grid" style={{ gap: 14 }}>
@@ -57,7 +63,15 @@ export function JobDetailPage() {
             <h1 className="h1" style={{ marginTop: 8 }}>{job.title}</h1>
 
             <div className="kv" style={{ marginTop: 8 }}>
-              <span><b>{job.company?.email ?? "Компания"}</b></span>
+              <span>
+                {companyProfileId ? (
+                  <Link to={`/companies/${companyProfileId}`}>
+                    <b>{companyName}</b>
+                  </Link>
+                ) : (
+                  <b>{companyName}</b>
+                )}
+              </span>
               <span>{job.city ?? "Город не указан"}</span>
               {job.category && <span>{job.category}</span>}
               {job.workMode && <span>{job.workMode}</span>}
@@ -93,30 +107,15 @@ export function JobDetailPage() {
 
         {info && <div className="small" style={{ marginTop: 12, fontWeight: 800 }}>{info}</div>}
 
-        <div className="toolbar" style={{ marginTop: 14 }}>
-          {!token ? (
+        <div className="toolbar" style={{ marginTop: 18 }}>
+          {canSeeker && (
             <>
-              <Button variant="primary" onClick={() => nav("/login", { state: { from: `/jobs/${jobId}` } })}>
-                Войти, чтобы откликнуться
-              </Button>
-              <Button onClick={() => nav("/login", { state: { from: `/jobs/${jobId}` } })}>
-                Войти, чтобы сохранить
-              </Button>
-            </>
-          ) : !canSeeker ? (
-            <div className="small">
-              Отклики и избранное доступны только для роли <b>JOB_SEEKER</b>.
-            </div>
-          ) : (
-            <>
-              <Button
-                variant="primary"
-                onClick={() => setInfo("Apply/Save пока не реализованы в backend (нужно добавить эндпоинты).")}
-              >
+              <Button variant="primary">
                 Откликнуться
               </Button>
-              <Button onClick={() => setInfo("Saved jobs пока не реализованы в backend.")}>
-                В избранное
+
+              <Button>
+                Добавить в сохранённые
               </Button>
             </>
           )}

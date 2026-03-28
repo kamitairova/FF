@@ -41,42 +41,82 @@ enum ExperienceLevel {
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  password   String
-  role       Role     @default(USER)
-  isDisabled Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String
+  role         Role     @default(USER)
+  isDisabled   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  vacancies  Vacancy[] @relation("CompanyVacancies")
+  companyProfile CompanyProfile?
+
+  @@index([role])
+  @@index([isDisabled])
+}
+
+model CompanyProfile {
+  id                       Int      @id @default(autoincrement())
+  userId                   Int      @unique
+  companyName              String   @default("")
+  companyLogoUrl           String?
+  companyShortDescription  String?
+  companyDescription       String?
+  companyWebsite           String?
+  companyPhone             String?
+  companyCity              String?
+  companyCountry           String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vacancies  Vacancy[]
+  photos     CompanyPhoto[]
+
+  @@index([companyName])
+  @@index([companyCity])
+  @@index([companyCountry])
 }
 
 model Vacancy {
-  id               Int              @id @default(autoincrement())
-  title            String
-  description      String
-  salaryFrom       Int?
-  salaryTo         Int?
-  city             String?
-  category         String?
-  employmentType   EmploymentType?
-  workMode         WorkMode?
-  experienceLevel  ExperienceLevel?
-  requiredSkills   String[]         @default([])
-  status           VacancyStatus    @default(PENDING)
+  id                 Int              @id @default(autoincrement())
+  title              String
+  description        String
+  salaryFrom         Int?
+  salaryTo           Int?
+  city               String?
+  category           String?
+  employmentType     EmploymentType?
+  workMode           WorkMode?
+  experienceLevel    ExperienceLevel?
+  requiredSkills     String[]         @default([])
+  status             VacancyStatus    @default(PENDING)
+  wasPublishedBefore Boolean          @default(false)
 
-  companyId        Int
-  company          User             @relation("CompanyVacancies", fields: [companyId], references: [id], onDelete: Cascade)
+  companyProfileId   Int
+  companyProfile     CompanyProfile   @relation(fields: [companyProfileId], references: [id], onDelete: Cascade)
 
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  @@index([companyId])
+  @@index([companyProfileId])
   @@index([status])
   @@index([createdAt])
   @@index([category])
+  @@index([city])
   @@index([employmentType])
   @@index([workMode])
   @@index([experienceLevel])
+}
+
+model CompanyPhoto {
+  id               Int      @id @default(autoincrement())
+  companyProfileId Int
+  imageUrl         String
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+
+  companyProfile   CompanyProfile @relation(fields: [companyProfileId], references: [id], onDelete: Cascade)
+
+  @@index([companyProfileId])
 }

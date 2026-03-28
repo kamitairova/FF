@@ -31,10 +31,7 @@ export function AdminUsersPage() {
     <div className="grid" style={{ gap: 14 }}>
       <div className="surface card-pad">
         <h1 className="h1">Пользователи: enable/disable</h1>
-        <p className="p" style={{ marginTop: 6 }}>
-          По ТЗ доступны только эндпоинты enable/disable. 
-          Поэтому здесь вводится <b>userId</b> вручную (например, из логов/админки бэка).
-        </p>
+        
       </div>
 
       <div className="card card-pad">

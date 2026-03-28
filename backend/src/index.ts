@@ -5,6 +5,9 @@
   import { errorHandler } from "./middlewares/error";
   import { jobsRouter } from "./modules/jobs/jobs.routes";
   import { adminRouter } from "./modules/admin/admin.routes";
+  import { companyRouter } from "./modules/company/company.routes";
+  import { companiesRouter } from "./modules/companies/companies.routes";
+
 
   const app = express();
   const PORT = Number(process.env.PORT) || 5000;
@@ -36,6 +39,11 @@
   app.use("/api/auth", authRouter);
 
   app.use("/api/jobs", jobsRouter);
+
+  app.use("/api/company", companyRouter);
+
+  app.use("/api/companies", companiesRouter);
+
 
   app.use("/api/admin", adminRouter);
 

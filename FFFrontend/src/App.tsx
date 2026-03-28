@@ -14,10 +14,12 @@ import { SeekerApplicationsPage } from "./pages/seeker/SeekerApplicationsPage";
 import { SeekerSavedJobsPage } from "./pages/seeker/SeekerSavedJobsPage";
 
 import { CompanyJobsPage } from "./pages/company/CompanyJobsPage";
-import { CompanyJobEditorPage } from "./pages/company/CompanyJobEditorPage";
+import CompanyJobEditorPage from "./pages/company/CompanyJobEditorPage";
 import { CompanyApplicantsPage } from "./pages/company/CompanyApplicantsPage";
 import { CompanyCandidatesPage } from "./pages/company/CompanyCandidatesPage";
 import { CandidateDetailPage } from "./pages/company/CandidateDetailPage";
+import CompanyProfilePage from "./pages/company/CompanyProfilePage"
+import PublicCompanyProfilePage from "./pages/company/PublicCompanyProfilePage";
 
 import { InboxPage } from "./pages/shared/InboxPage";
 import { ThreadPage } from "./pages/shared/ThreadPage";
@@ -44,7 +46,7 @@ export default function App() {
         </Route>
 
         <Route element={<ProtectedRoute />}>
-          <Route element={<RoleGuard allow={["JOB_SEEKER"]} />}>
+          <Route element={<RoleGuard allow={["USER"]} />}>
             <Route path="/seeker/profile" element={<SeekerProfilePage />} />
             <Route path="/seeker/resume" element={<SeekerResumePage />} />
             <Route path="/seeker/applications" element={<SeekerApplicationsPage />} />
@@ -55,11 +57,13 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route element={<RoleGuard allow={["COMPANY"]} />}>
             <Route path="/company/jobs" element={<CompanyJobsPage />} />
-            <Route path="/company/jobs/new" element={<CompanyJobEditorPage mode="create" />} />
-            <Route path="/company/jobs/:jobId/edit" element={<CompanyJobEditorPage mode="edit" />} />
+            <Route path="/company/jobs/new" element={<CompanyJobEditorPage />} />
+            <Route path="/company/jobs/:jobId/edit" element={<CompanyJobEditorPage />} />
             <Route path="/company/jobs/:jobId/applicants" element={<CompanyApplicantsPage />} />
             <Route path="/company/candidates" element={<CompanyCandidatesPage />} />
             <Route path="/company/candidates/:seekerProfileId" element={<CandidateDetailPage />} />
+            <Route path="/company/profile" element={<CompanyProfilePage />} />
+            <Route path="/companies/:id" element={<PublicCompanyProfilePage />} />
           </Route>
         </Route>
 

@@ -144,3 +144,296 @@
   align-items:flex-start;
 }
 .small{ font-size: 12px; color: var(--muted); }
+
+.job-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.job-card-hover {
+  transition:
+    transform 0.16s ease,
+    box-shadow 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.job-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.09);
+  border-color: rgba(91, 124, 255, 0.22);
+}
+
+.editor-page {
+  display: grid;
+  gap: 16px;
+}
+
+.editor-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.editor-kicker {
+  display: inline-flex;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary2);
+  background: rgba(91, 124, 255, 0.12);
+  border: 1px solid rgba(91, 124, 255, 0.16);
+}
+
+.editor-hero-text {
+  margin-top: 10px;
+  max-width: 760px;
+}
+
+.editor-hero-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.editor-alert {
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 16px;
+  align-items: start;
+}
+
+.editor-main {
+  display: grid;
+  gap: 16px;
+}
+
+.editor-section {
+  display: grid;
+  gap: 18px;
+}
+
+.editor-section-head {
+  display: grid;
+  gap: 4px;
+}
+
+.editor-section-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.editor-section-subtitle {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.editor-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.editor-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.editor-three-responsive {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.editor-textarea {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.editor-textarea:focus {
+  border-color: rgba(91, 124, 255, 0.4);
+  box-shadow: 0 0 0 4px rgba(91, 124, 255, 0.12);
+}
+
+.editor-skills-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.editor-submit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.editor-submit-title {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.editor-submit-text {
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.editor-side {
+  display: grid;
+  gap: 16px;
+  position: sticky;
+  top: 12px;
+}
+
+.editor-side-card {
+  display: grid;
+  gap: 12px;
+}
+
+.editor-side-title {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.editor-tips {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.editor-status-box {
+  display: grid;
+  gap: 10px;
+}
+
+.editor-status-pill {
+  width: fit-content;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--warning);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.editor-status-text {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+  .editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-side {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  .editor-two,
+  .editor-three-responsive {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-hero {
+    flex-direction: column;
+  }
+
+  .editor-submit-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.editor-full {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.editor-three {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+
+
+.profile-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #111827;
+  color: white;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  font-size: 26px;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.photo-card {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.photo-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-delete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  background: rgba(0,0,0,0.6);
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}

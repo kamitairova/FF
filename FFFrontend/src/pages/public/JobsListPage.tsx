@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { jobsApi } from "../../api/endpoints";
 import { JobPost } from "../../api/types";
@@ -51,7 +52,154 @@ const categories = [
   "QA",
   "DevOps",
   "Mobile",
+  "Sales",
+  "Marketing",
 ];
+
+function JobFilters({
+  sp,
+  setSp,
+  locationDraft,
+  setLocationDraft,
+  salaryMinDraft,
+  setSalaryMinDraft,
+  salaryMaxDraft,
+  setSalaryMaxDraft,
+  applyFilters,
+  resetFilters,
+}: {
+  sp: URLSearchParams;
+  setSp: ReturnType<typeof useSearchParams>[1];
+  locationDraft: string;
+  setLocationDraft: (v: string) => void;
+  salaryMinDraft: string;
+  setSalaryMinDraft: (v: string) => void;
+  salaryMaxDraft: string;
+  setSalaryMaxDraft: (v: string) => void;
+  applyFilters: () => void;
+  resetFilters: () => void;
+}) {
+  const setField = (k: string, v: string) => {
+    const next = new URLSearchParams(sp);
+    if (v) next.set(k, v);
+    else next.delete(k);
+    next.set("page", "1");
+    if (!next.get("pageSize")) next.set("pageSize", "10");
+    setSp(next);
+  };
+
+  return (
+    <div className="grid" style={{ gap: 12 }}>
+      <div>
+        <label className="label">Город / локация</label>
+        <Input
+          placeholder="Например: Bishkek"
+          value={locationDraft}
+          onChange={(e) => setLocationDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") applyFilters();
+          }}
+        />
+      </div>
+
+      <div>
+        <label className="label">Категория</label>
+        <Select
+          value={sp.get("category") ?? ""}
+          onChange={(e) => setField("category", e.target.value)}
+        >
+          <option value="">Все</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </Select>
+      </div>
+
+      <div className="grid grid-2">
+        <div>
+          <label className="label">Зарплата от</label>
+          <Input
+            type="number"
+            placeholder="0"
+            value={salaryMinDraft}
+            onChange={(e) => setSalaryMinDraft(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label">Зарплата до</label>
+          <Input
+            type="number"
+            placeholder="0"
+            value={salaryMaxDraft}
+            onChange={(e) => setSalaryMaxDraft(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="label">Тип занятости</label>
+        <Select
+          value={sp.get("employmentType") ?? ""}
+          onChange={(e) => setField("employmentType", e.target.value)}
+        >
+          <option value="">Все</option>
+          <option value="FULL_TIME">Full-time</option>
+          <option value="PART_TIME">Part-time</option>
+        </Select>
+      </div>
+
+      <div>
+        <label className="label">Формат работы</label>
+        <Select
+          value={sp.get("workMode") ?? ""}
+          onChange={(e) => setField("workMode", e.target.value)}
+        >
+          <option value="">Все</option>
+          <option value="REMOTE">Remote</option>
+          <option value="ONSITE">On-site</option>
+          <option value="HYBRID">Hybrid</option>
+        </Select>
+      </div>
+
+      <div>
+        <label className="label">Опыт</label>
+        <Select
+          value={sp.get("experienceLevel") ?? ""}
+          onChange={(e) => setField("experienceLevel", e.target.value)}
+        >
+          <option value="">Все</option>
+          <option value="INTERN">Intern</option>
+          <option value="JUNIOR">Junior</option>
+          <option value="MIDDLE">Middle</option>
+          <option value="SENIOR">Senior</option>
+          <option value="LEAD">Lead</option>
+        </Select>
+      </div>
+
+      <div>
+        <label className="label">Сортировка</label>
+        <Select
+          value={sp.get("sort") ?? "newest"}
+          onChange={(e) => setField("sort", e.target.value)}
+        >
+          <option value="newest">Сначала новые</option>
+          <option value="relevance">По релевантности</option>
+          <option value="salary_asc">Зарплата по возрастанию</option>
+          <option value="salary_desc">Зарплата по убыванию</option>
+        </Select>
+      </div>
+
+      <div className="toolbar" style={{ marginTop: 4 }}>
+        <Button variant="primary" onClick={applyFilters}>
+          Применить
+        </Button>
+        <Button onClick={resetFilters}>Сбросить</Button>
+      </div>
+    </div>
+  );
+}
 
 export function JobsListPage() {
   const [sp, setSp] = useSearchParams();
@@ -95,16 +243,6 @@ export function JobsListPage() {
     setSp(next);
   };
 
-  const setField = (k: string, v: string) => {
-    const next = new URLSearchParams(sp);
-    if (v) next.set(k, v);
-    else next.delete(k);
-
-    next.set("page", "1");
-    if (!next.get("pageSize")) next.set("pageSize", "10");
-    setSp(next);
-  };
-
   const resetFilters = () => {
     setQDraft("");
     setLocationDraft("");
@@ -112,6 +250,18 @@ export function JobsListPage() {
     setSalaryMaxDraft("");
     setSp(new URLSearchParams({ page: "1", pageSize: "10" }));
   };
+
+  const filtersRoot = typeof document !== "undefined"
+    ? document.getElementById("jobs-filters-root")
+    : null;
+
+  if (query.isLoading) {
+    return <Centered><Spinner /></Centered>;
+  }
+
+  if (query.isError) {
+    return <Centered title="Ошибка">Не удалось загрузить вакансии.</Centered>;
+  }
 
   return (
     <div className="grid" style={{ gap: 16 }}>
@@ -127,7 +277,6 @@ export function JobsListPage() {
         >
           <div>
             <h1 className="h1">Вакансии</h1>
-            <p className="p" style={{ marginTop: 6 }}></p>
           </div>
 
           <div
@@ -137,7 +286,7 @@ export function JobsListPage() {
               alignItems: "center",
               minWidth: 420,
               flex: 1,
-              maxWidth: 520,
+              maxWidth: 560,
             }}
           >
             <Input
@@ -155,206 +304,115 @@ export function JobsListPage() {
         </div>
       </div>
 
-      <div className="jobs-layout">
-        <aside className="sidebar-sticky">
-          <div className="card card-pad grid">
+      {filtersRoot &&
+        createPortal(
+          <JobFilters
+            sp={sp}
+            setSp={setSp}
+            locationDraft={locationDraft}
+            setLocationDraft={setLocationDraft}
+            salaryMinDraft={salaryMinDraft}
+            setSalaryMinDraft={setSalaryMinDraft}
+            salaryMaxDraft={salaryMaxDraft}
+            setSalaryMaxDraft={setSalaryMaxDraft}
+            applyFilters={applyFilters}
+            resetFilters={resetFilters}
+          />,
+          filtersRoot
+        )}
 
-            <div>
-              <label className="label">Город / локация</label>
-              <Input
-                placeholder="Например: Bishkek"
-                value={locationDraft}
-                onChange={(e) => setLocationDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") applyFilters();
-                }}
-              />
-            </div>
+      <div className="grid" style={{ gap: 14 }}>
+        <div className="small" style={{ fontWeight: 800 }}>
+          Найдено вакансий: {total}
+        </div>
 
-            <div>
-              <label className="label">Категория</label>
-              <Select
-                value={sp.get("category") ?? ""}
-                onChange={(e) => setField("category", e.target.value)}
-              >
-                <option value="">Все</option>
-                {categories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </Select>
-            </div>
+        {items.length === 0 ? (
+          <div className="card card-pad">Ничего не найдено.</div>
+        ) : (
+          items.map((job) => (
+            <Link
+              key={job.id}
+              to={`/jobs/${job.id}`}
+              className="job-card-link"
+            >
+              <article className="card card-pad job-card-hover">
+                <div className="split">
+                  <div style={{ minWidth: 0 }}>
+                    <h2 className="h2" style={{ fontSize: 20, marginBottom: 8 }}>
+                      {job.title}
+                    </h2>
 
-            <div className="grid grid-2">
-              <div>
-                <label className="label">Зарплата от</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={salaryMinDraft}
-                  onChange={(e) => setSalaryMinDraft(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="label">Зарплата до</label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={salaryMaxDraft}
-                  onChange={(e) => setSalaryMaxDraft(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="label">Тип занятости</label>
-              <Select
-                value={sp.get("employmentType") ?? ""}
-                onChange={(e) => setField("employmentType", e.target.value)}
-              >
-                <option value="">Все</option>
-                <option value="FULL_TIME">Full-time</option>
-                <option value="PART_TIME">Part-time</option>
-              </Select>
-            </div>
-
-            <div>
-              <label className="label">Формат работы</label>
-              <Select
-                value={sp.get("workMode") ?? ""}
-                onChange={(e) => setField("workMode", e.target.value)}
-              >
-                <option value="">Все</option>
-                <option value="REMOTE">Remote</option>
-                <option value="ONSITE">On-site</option>
-                <option value="HYBRID">Hybrid</option>
-              </Select>
-            </div>
-
-            <div>
-              <label className="label">Опыт</label>
-              <Select
-                value={sp.get("experienceLevel") ?? ""}
-                onChange={(e) => setField("experienceLevel", e.target.value)}
-              >
-                <option value="">Все</option>
-                <option value="INTERN">Intern</option>
-                <option value="JUNIOR">Junior</option>
-                <option value="MIDDLE">Middle</option>
-                <option value="SENIOR">Senior</option>
-                <option value="LEAD">Lead</option>
-              </Select>
-            </div>
-
-            <div>
-              <label className="label">Сортировка</label>
-              <Select
-                value={sp.get("sort") ?? "newest"}
-                onChange={(e) => setField("sort", e.target.value)}
-              >
-                <option value="newest">Сначала новые</option>
-                <option value="relevance">По релевантности</option>
-                <option value="salary_asc">Зарплата по возрастанию</option>
-                <option value="salary_desc">Зарплата по убыванию</option>
-              </Select>
-            </div>
-
-            <div className="toolbar">
-              <Button variant="primary" onClick={applyFilters}>
-                Применить
-              </Button>
-              <Button onClick={resetFilters}>Сбросить</Button>
-            </div>
-          </div>
-        </aside>
-
-        <section className="grid">
-          {query.isLoading && (
-            <div className="card card-pad">
-              <Spinner />
-            </div>
-          )}
-
-          {query.isError && (
-            <Centered title="Ошибка загрузки">
-              {(query.error as any)?.message ?? "Ошибка"}
-            </Centered>
-          )}
-
-          {!query.isLoading && items.length === 0 && (
-            <div className="card card-pad">
-              <h2 className="h2">Ничего не найдено</h2>
-              <p className="p" style={{ marginTop: 6 }}>
-                Попробуй изменить фильтры или сбросить поиск.
-              </p>
-            </div>
-          )}
-
-          {items.length > 0 && (
-            <>
-              <div className="small" style={{ fontWeight: 800 }}>
-                Найдено вакансий: {total}
-              </div>
-
-              {items.map((job: JobPost) => (
-                <Link key={job.id} to={`/jobs/${job.id}`} className="card job-card">
-                  <div className="split">
-                    <div style={{ flex: 1 }}>
-                      <h3 className="job-title">{job.title}</h3>
-
-                      <div className="job-meta">
-                        <span>{job.company?.email ?? "Компания"}</span>
-                        <span>{job.city ?? "Локация не указана"}</span>
-                        {job.category && <span>{job.category}</span>}
-                        {job.workMode && <span>{job.workMode}</span>}
-                        {job.experienceLevel && <span>{job.experienceLevel}</span>}
-                      </div>
-
-                      <div style={{ marginTop: 10, lineHeight: 1.5 }}>
-                        {(job.description ?? "").slice(0, 180)}
-                        {(job.description?.length ?? 0) > 180 ? "..." : ""}
-                      </div>
-
-                      {!!job.requiredSkills?.length && (
-                        <div className="badges" style={{ marginTop: 10 }}>
-                          {job.requiredSkills.slice(0, 5).map((skill) => (
-                            <span key={skill} className="badge">
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                    <div className="kv" style={{ marginBottom: 10 }}>
+                      <span>
+                        {job.companyProfile?.id ? (
+                          <Link to={`/companies/${job.companyProfile.id}`}>
+                            {job.companyProfile?.companyName || job.companyProfile?.user?.email || "Компания"}
+                          </Link>
+                        ) : (
+                          <span>{job.companyProfile?.companyName || "Компания"}</span>
+                        )}
+                        </span>
+                      <span>{job.city ?? "Локация не указана"}</span>
+                      {job.category && <span>{job.category}</span>}
                     </div>
 
-                    <div style={{ minWidth: 170, textAlign: "right" }}>
-                      <div className="job-salary">
-                        {money(job.salaryFrom ?? null, job.salaryTo ?? null) ?? "З/п не указана"}
+                    <div className="kv" style={{ marginBottom: 12 }}>
+                      {job.workMode && <span>{job.workMode}</span>}
+                      {job.experienceLevel && <span>{job.experienceLevel}</span>}
+                    </div>
+
+                    <p
+                      className="p"
+                      style={{
+                        marginBottom: 14,
+                        color: "var(--text)",
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {job.description?.slice(0, 190)}
+                      {job.description && job.description.length > 190 ? "..." : ""}
+                    </p>
+
+                    {!!job.requiredSkills?.length && (
+                      <div className="badges">
+                        {job.requiredSkills.slice(0, 4).map((skill) => (
+                          <span key={skill} className="badge">
+                            {skill}
+                          </span>
+                        ))}
                       </div>
-                      <div className="small" style={{ marginTop: 8 }}>
-                        {job.createdAt
-                          ? new Date(job.createdAt).toLocaleDateString()
-                          : ""}
-                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                      {money(job.salaryFrom ?? null, job.salaryTo ?? null) ?? "З/п не указана"}
+                    </div>
+                    <div className="small" style={{ marginTop: 8 }}>
+                      {job.createdAt
+                        ? new Date(job.createdAt).toLocaleDateString()
+                        : ""}
                     </div>
                   </div>
-                </Link>
-              ))}
+                </div>
+              </article>
+            </Link>
+          ))
+        )}
 
-              <Pagination
-                page={page}
-                pageSize={pageSize}
-                total={total}
-                onPage={(p) => {
-                  const next = new URLSearchParams(sp);
-                  next.set("page", String(p));
-                  if (!next.get("pageSize")) next.set("pageSize", "10");
-                  setSp(next);
-                }}
-              />
-            </>
-          )}
-        </section>
+        <div className="surface card-pad">
+          <Pagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPage={(p: number) => {
+              const next = new URLSearchParams(sp);
+              next.set("page", String(p));
+              if (!next.get("pageSize")) next.set("pageSize", "10");
+              setSp(next);
+            }}
+          />
+        </div>
       </div>
     </div>
   );
