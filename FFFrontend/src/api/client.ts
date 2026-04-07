@@ -23,9 +23,18 @@ export async function apiFetch<T>(
   const headers = new Headers(opts.headers || {});
   headers.set("Accept", "application/json");
 
+  // --- ДОБАВЛЕНО: Автоматический поиск токена ---
+  // Если токен не передан в аргументах (opts.token), берем его из localStorage
+  const token = opts.token || localStorage.getItem('token');
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  // ----------------------------------------------
+
   const isForm = opts.body instanceof FormData;
-  if (!isForm && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
-  if (opts.token) headers.set("Authorization", `Bearer ${opts.token}`);
+  if (!isForm && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const res = await fetch(url, { ...opts, headers });
 

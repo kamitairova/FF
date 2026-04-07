@@ -330,73 +330,74 @@ export function JobsListPage() {
           <div className="card card-pad">Ничего не найдено.</div>
         ) : (
           items.map((job) => (
-            <Link
+            <article
               key={job.id}
-              to={`/jobs/${job.id}`}
-              className="job-card-link"
+              className="card card-pad job-card-hover"
+              onClick={() => window.location.assign(`/jobs/${job.id}`)}
+              style={{ cursor: "pointer" }}
             >
-              <article className="card card-pad job-card-hover">
-                <div className="split">
-                  <div style={{ minWidth: 0 }}>
-                    <h2 className="h2" style={{ fontSize: 20, marginBottom: 8 }}>
-                      {job.title}
-                    </h2>
+              <div className="split">
+                <div style={{ minWidth: 0 }}>
+                  <h2 className="h2" style={{ fontSize: 20, marginBottom: 8 }}>
+                    {job.title}
+                  </h2>
 
-                    <div className="kv" style={{ marginBottom: 10 }}>
-                      <span>
-                        {job.companyProfile?.id ? (
-                          <Link to={`/companies/${job.companyProfile.id}`}>
-                            {job.companyProfile?.companyName || job.companyProfile?.user?.email || "Компания"}
-                          </Link>
-                        ) : (
-                          <span>{job.companyProfile?.companyName || "Компания"}</span>
-                        )}
-                        </span>
-                      <span>{job.city ?? "Локация не указана"}</span>
-                      {job.category && <span>{job.category}</span>}
-                    </div>
+                  <div className="kv" style={{ marginBottom: 10 }}>
+                    <span>
+                      {job.companyProfile?.id ? (
+                        <Link
+                          to={`/companies/${job.companyProfile.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {job.companyProfile?.companyName || job.companyProfile?.user?.email || "Компания"}
+                        </Link>
+                      ) : (
+                        <span>{job.companyProfile?.companyName || "Компания"}</span>
+                      )}
+                    </span>
 
-                    <div className="kv" style={{ marginBottom: 12 }}>
-                      {job.workMode && <span>{job.workMode}</span>}
-                      {job.experienceLevel && <span>{job.experienceLevel}</span>}
-                    </div>
-
-                    <p
-                      className="p"
-                      style={{
-                        marginBottom: 14,
-                        color: "var(--text)",
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {job.description?.slice(0, 190)}
-                      {job.description && job.description.length > 190 ? "..." : ""}
-                    </p>
-
-                    {!!job.requiredSkills?.length && (
-                      <div className="badges">
-                        {job.requiredSkills.slice(0, 4).map((skill) => (
-                          <span key={skill} className="badge">
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <span>{job.city ?? "Локация не указана"}</span>
+                    {job.category && <span>{job.category}</span>}
                   </div>
 
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div style={{ fontSize: 18, fontWeight: 900 }}>
-                      {money(job.salaryFrom ?? null, job.salaryTo ?? null) ?? "З/п не указана"}
+                  <div className="kv" style={{ marginBottom: 12 }}>
+                    {job.workMode && <span>{job.workMode}</span>}
+                    {job.experienceLevel && <span>{job.experienceLevel}</span>}
+                  </div>
+
+                  <p
+                    className="p"
+                    style={{
+                      marginBottom: 14,
+                      color: "var(--text)",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {job.description?.slice(0, 190)}
+                    {job.description && job.description.length > 190 ? "..." : ""}
+                  </p>
+
+                  {!!job.requiredSkills?.length && (
+                    <div className="badges">
+                      {job.requiredSkills.slice(0, 4).map((skill) => (
+                        <span key={skill} className="badge">
+                          {skill}
+                        </span>
+                      ))}
                     </div>
-                    <div className="small" style={{ marginTop: 8 }}>
-                      {job.createdAt
-                        ? new Date(job.createdAt).toLocaleDateString()
-                        : ""}
-                    </div>
+                  )}
+                </div>
+
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <div style={{ fontSize: 18, fontWeight: 900 }}>
+                    {money(job.salaryFrom ?? null, job.salaryTo ?? null) ?? "З/п не указана"}
+                  </div>
+                  <div className="small" style={{ marginTop: 8 }}>
+                    {job.createdAt ? new Date(job.createdAt).toLocaleDateString() : ""}
                   </div>
                 </div>
-              </article>
-            </Link>
+              </div>
+            </article>
           ))
         )}
 

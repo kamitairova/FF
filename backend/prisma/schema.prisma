@@ -40,20 +40,6 @@ enum ExperienceLevel {
   LEAD
 }
 
-model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  password     String
-  role         Role     @default(USER)
-  isDisabled   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  companyProfile CompanyProfile?
-
-  @@index([role])
-  @@index([isDisabled])
-}
 
 model CompanyProfile {
   id                       Int      @id @default(autoincrement())
@@ -119,4 +105,61 @@ model CompanyPhoto {
   companyProfile   CompanyProfile @relation(fields: [companyProfileId], references: [id], onDelete: Cascade)
 
   @@index([companyProfileId])
+}
+
+// Модель User
+model User {
+  id             Int               @id @default(autoincrement()) // Тип Int
+  email          String            @unique
+  password       String
+  role           Role              @default(USER) // Убедитесь, что JOB_SEEKER есть в enum Role
+  isDisabled     Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  companyProfile CompanyProfile?
+  // ДОБАВЬТЕ ЭТУ СТРОКУ ДЛЯ ОБРАТНОЙ СВЯЗИ
+  seekerProfile  JobSeekerProfile? 
+
+  @@index([role])
+  @@index([isDisabled])
+}
+
+// Модель JobSeekerProfile
+model JobSeekerProfile {
+  id               Int          @id @default(autoincrement())
+  // ИЗМЕНИТЕ String на Int, чтобы тип совпадал с User.id
+  userId           Int          @unique 
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName         String
+  location         String?
+  headline         String?
+  summary          String?
+  skills           String[]     @default([])
+  experienceLevel  String?
+  avatarUrl        String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  resume           Resume?
+  resumeFile       ResumeFile?
+}
+
+// Модели Resume и ResumeFile также должны использовать Int для внешних ключей
+model Resume {
+  id                Int              @id @default(autoincrement())
+  seekerProfileId   Int              @unique
+  seekerProfile     JobSeekerProfile @relation(fields: [seekerProfileId], references: [id], onDelete: Cascade)
+  content           Json
+  updatedAt         DateTime         @updatedAt
+}
+
+model ResumeFile {
+  id                Int              @id @default(autoincrement())
+  seekerProfileId   Int              @unique
+  seekerProfile     JobSeekerProfile @relation(fields: [seekerProfileId], references: [id], onDelete: Cascade)
+  fileName          String
+  fileType          String
+  storagePath       String
+  uploadedAt        DateTime         @default(now())
 }

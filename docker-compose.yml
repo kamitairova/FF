@@ -30,16 +30,21 @@ services:
         condition: service_healthy
     env_file:
       - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules # Защищает модули контейнера
+      - /app/dist         # КРИТИЧНО: Защищает папку билда от удаления хостом
+      - ./uploads:/app/uploads
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/jobboard
       JWT_SECRET: secret
       PORT: 5000
       NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
+    # Мы убираем npx prisma migrate deploy из команды старта, чтобы она не мешала запуску, если база не готова
     command: >
       sh -lc "until nc -z postgres 5432; do echo 'Waiting for DB...'; sleep 1; done;
-      npx prisma migrate deploy;
       node dist/index.js"
 
 volumes:
   ff_postgres_data:
-  backend_node_modules:

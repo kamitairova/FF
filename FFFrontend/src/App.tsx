@@ -8,7 +8,7 @@ import { JobDetailPage } from "./pages/public/JobDetailPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { RegisterPage } from "./pages/auth/RegisterPage";
 
-import { SeekerProfilePage } from "./pages/seeker/SeekerProfilePage";
+// import { SeekerProfilePage } from "./pages/seeker/SeekerProfilePage";
 import { SeekerResumePage } from "./pages/seeker/SeekerResumePage";
 import { SeekerApplicationsPage } from "./pages/seeker/SeekerApplicationsPage";
 import { SeekerSavedJobsPage } from "./pages/seeker/SeekerSavedJobsPage";
@@ -47,7 +47,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route element={<RoleGuard allow={["USER"]} />}>
-            <Route path="/seeker/profile" element={<SeekerProfilePage />} />
+            {/* <Route path="/seeker/profile" element={<SeekerProfilePage />} /> */}
             <Route path="/seeker/resume" element={<SeekerResumePage />} />
             <Route path="/seeker/applications" element={<SeekerApplicationsPage />} />
             <Route path="/seeker/saved" element={<SeekerSavedJobsPage />} />

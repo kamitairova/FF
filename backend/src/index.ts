@@ -7,23 +7,27 @@
   import { adminRouter } from "./modules/admin/admin.routes";
   import { companyRouter } from "./modules/company/company.routes";
   import { companiesRouter } from "./modules/companies/companies.routes";
+  import seekerRoutes from "./modules/seeker/seeker.routes";
+  import path from "path"
+
+// ... после остальных роутов
 
 
   const app = express();
   const PORT = Number(process.env.PORT) || 5000;
 
 
-  app.use(cors({
-    origin: true, 
-    credentials: true
-  }));
-
   // app.use(cors({
-  //   origin: 'http://localhost:5173', // разрешаем только фронтенд
-  //   credentials: true,
-  //   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  //   allowedHeaders: ['Content-Type', 'Authorization']
+  //   origin: true, 
+  //   credentials: true
   // }));
+
+  app.use(cors({
+    origin: 'http://localhost:5173', // разрешаем только фронтенд
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
 
   app.use(express.json());
 
@@ -43,6 +47,10 @@
   app.use("/api/company", companyRouter);
 
   app.use("/api/companies", companiesRouter);
+
+  app.use("/api/seeker", seekerRoutes);
+
+  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 
   app.use("/api/admin", adminRouter);
