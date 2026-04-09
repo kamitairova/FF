@@ -172,6 +172,34 @@ export const seekerApi = {
   resume: async (_token: string) => ({ resume: null as any }),
 };
 
+export const seekerPhotosApi = {
+  list: (token: string) =>
+    apiFetch<{ photos: any[] }>(`/seeker/profile/photos`, {
+      method: "GET",
+      token,
+    }),
+
+  upload: (token: string, files: File[]) => {
+    const formData = new FormData();
+
+    for (const file of files) {
+      formData.append("photos", file);
+    }
+
+    return apiFetch<{ photos: any[] }>(`/seeker/profile/photos`, {
+      method: "POST",
+      token,
+      body: formData,
+    });
+  },
+
+  remove: (token: string, photoId: number) =>
+    apiFetch<void>(`/seeker/profile/photos/${photoId}`, {
+      method: "DELETE",
+      token,
+    }),
+};
+
 export const candidatesApi = {
   list: async (_token: string, _qs?: string): Promise<Paged<any>> => ({
     data: [],

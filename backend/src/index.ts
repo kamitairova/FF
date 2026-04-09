@@ -7,7 +7,10 @@
   import { adminRouter } from "./modules/admin/admin.routes";
   import { companyRouter } from "./modules/company/company.routes";
   import { companiesRouter } from "./modules/companies/companies.routes";
-  import seekerRoutes from "./modules/seeker/seeker.routes";
+  import { seekerProfileRouter } from "./modules/seeker/seeker-profile.routes";
+  import { seekerPhotosRouter } from "./modules/seeker-photo/seeker-photos.routes";
+  import { resumesRouter } from "./modules/resumes/resumes.routes";
+  import { publicSeekersRouter } from "./modules/public-seekers/public-seekers.routes";
   import path from "path"
 
 // ... после остальных роутов
@@ -48,7 +51,10 @@
 
   app.use("/api/companies", companiesRouter);
 
-  app.use("/api/seeker", seekerRoutes);
+  app.use("/api/seeker", seekerProfileRouter);
+  app.use("/api/seeker", seekerPhotosRouter);
+  app.use("/api/seeker", resumesRouter);
+  app.use("/api", publicSeekersRouter);
 
   app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
