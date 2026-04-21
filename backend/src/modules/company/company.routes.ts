@@ -10,7 +10,7 @@ companyRouter.get(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res) => {
-    const profile = await Company.getCompanyProfileByUserId(Number(req.user!.id));
+    const profile = await Company.getCompanyProfileByUserId(Number(req.user!.userId));
     res.json({ profile });
   }
 );
@@ -21,7 +21,7 @@ companyRouter.patch(
   requireRole("COMPANY"),
   async (req: AuthedRequest, res) => {
     const updated = await Company.updateCompanyProfileByUserId(
-      Number(req.user!.id),
+      Number(req.user!.userId),
       req.body
     );
     res.json({ profile: updated });
@@ -33,7 +33,7 @@ companyRouter.get(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res) => {
-    const photos = await Company.getPhotos(Number(req.user!.id));
+    const photos = await Company.getPhotos(Number(req.user!.userId));
     res.json({ photos });
   }
 );
@@ -43,7 +43,7 @@ companyRouter.post(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res) => {
-    const photo = await Company.addPhoto(Number(req.user!.id), req.body.imageUrl);
+    const photo = await Company.addPhoto(Number(req.user!.userId), req.body.imageUrl);
     res.json({ photo });
   }
 );
@@ -53,7 +53,7 @@ companyRouter.delete(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res) => {
-    await Company.deletePhoto(Number(req.user!.id), Number(req.params.id));
+    await Company.deletePhoto(Number(req.user!.userId), Number(req.params.id));
     res.status(204).send();
   }
 );

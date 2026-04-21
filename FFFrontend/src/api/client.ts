@@ -25,7 +25,7 @@ export async function apiFetch<T>(
 
   // --- ДОБАВЛЕНО: Автоматический поиск токена ---
   // Если токен не передан в аргументах (opts.token), берем его из localStorage
-  const token = opts.token || localStorage.getItem('token');
+  const token = opts.token || localStorage.getItem("jobsearch_token");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }

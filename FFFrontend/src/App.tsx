@@ -12,24 +12,26 @@ import PublicResumeDetailPage from "./pages/public/PublicResumeDetailPage";
 import PublicSeekerProfilePage from "./pages/public/PublicSeekerProfilePage";
 
 import CompanyProfilePage from "./pages/company/CompanyProfilePage";
+import PublicCompanyProfilePage from "./pages/company/PublicCompanyProfilePage";
 import { CompanyJobsPage } from "./pages/company/CompanyJobsPage";
 import CompanyJobEditorPage from "./pages/company/CompanyJobEditorPage";
-import { CompanyApplicantsPage } from "./pages/company/CompanyApplicantsPage";
 import { CompanyCandidatesPage } from "./pages/company/CompanyCandidatesPage";
 import { CandidateDetailPage } from "./pages/company/CandidateDetailPage";
 
 import { SeekerProfilePage } from "./pages/seeker/SeekerProfilePage";
-import SeekerResumesPage from "./pages/seeker/SeekerResumePage";
 import SeekerResumeEditorPage from "./pages/seeker/SeekerResumeEditorPage";
 import SeekerResumeDetailPage from "./pages/seeker/SeekerResumeDetailPage";
 import { SeekerApplicationsPage } from "./pages/seeker/SeekerApplicationsPage";
 import { SeekerSavedJobsPage } from "./pages/seeker/SeekerSavedJobsPage";
+import { MyResumesPage } from "./pages/seeker/MyResumePage";
 
 import { InboxPage } from "./pages/shared/InboxPage";
 import { NotificationsPage } from "./pages/shared/NotificationsPage";
+import { ThreadPage } from "./pages/shared/ThreadPage";
 
 import { AdminDashboardPage } from "./pages/admin/AdminDashboardPage";
-// import AdminJobsPage from "./pages/admin/AdminJobsPage";
+import { AdminJobsModerationPage } from "./pages/admin/AdminJobsModerationPage";
+import AdminResumesPage from "./pages/admin/AdminResumesPage";
 import { AdminUsersPage } from "./pages/admin/AdminUsersPage";
 import { AdminTaxonomyPage } from "./pages/admin/AdminTaxonomyPage";
 
@@ -54,14 +56,7 @@ export default function App() {
             </RoleGuard>
           }
         />
-        <Route
-          path="/seeker/resumes"
-          element={
-            <RoleGuard allow={["USER"]}>
-              <SeekerResumesPage />
-            </RoleGuard>
-          }
-        />
+
         <Route
           path="/seeker/resumes/new"
           element={
@@ -85,6 +80,14 @@ export default function App() {
               <SeekerResumeEditorPage />
             </RoleGuard>
           }
+        />
+        <Route
+            path="/seeker/resumes"
+            element={
+              <RoleGuard allow={["USER"]}>
+                <MyResumesPage />
+              </RoleGuard>
+            }
         />
         <Route
           path="/seeker/applications"
@@ -111,6 +114,7 @@ export default function App() {
             </RoleGuard>
           }
         />
+        <Route path="/companies/:id" element={<PublicCompanyProfilePage />} />
         <Route
           path="/company/jobs"
           element={
@@ -135,14 +139,7 @@ export default function App() {
             </RoleGuard>
           }
         />
-        <Route
-          path="/company/jobs/:jobId/applicants"
-          element={
-            <RoleGuard allow={["COMPANY"]}>
-              <CompanyApplicantsPage />
-            </RoleGuard>
-          }
-        />
+        
         <Route
           path="/company/candidates"
           element={
@@ -156,6 +153,15 @@ export default function App() {
           element={
             <RoleGuard allow={["COMPANY"]}>
               <CandidateDetailPage />
+            </RoleGuard>
+          }
+        />
+
+        <Route
+          path="/inbox/:threadId"
+          element={
+            <RoleGuard allow={["USER", "COMPANY", "ADMIN"]}>
+              <ThreadPage />
             </RoleGuard>
           }
         />
@@ -185,14 +191,14 @@ export default function App() {
             </RoleGuard>
           }
         />
-        {/* <Route
+        <Route
           path="/admin/jobs"
           element={
             <RoleGuard allow={["ADMIN"]}>
-              <AdminJobsPage />
+              <AdminJobsModerationPage />
             </RoleGuard>
           }
-        /> */}
+        />
         <Route
           path="/admin/users"
           element={
@@ -201,6 +207,9 @@ export default function App() {
             </RoleGuard>
           }
         />
+
+        <Route path="/admin/resumes" element={<AdminResumesPage />} />
+        
         <Route
           path="/admin/taxonomy"
           element={

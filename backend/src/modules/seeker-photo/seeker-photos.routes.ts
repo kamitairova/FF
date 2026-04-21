@@ -11,7 +11,7 @@ seekerPhotosRouter.get(
   requireAuth,
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
-    const photos = await SeekerPhotos.listMyPhotos(Number(req.user!.id));
+    const photos = await SeekerPhotos.listMyPhotos(Number(req.user!.userId));
     res.json({ photos });
   }
 );
@@ -23,7 +23,7 @@ seekerPhotosRouter.post(
   seekerPhotoUpload.array("photos", 5),
   async (req: AuthedRequest, res) => {
     const files = (req.files as Express.Multer.File[]) || [];
-    const photos = await SeekerPhotos.addMyPhotos(Number(req.user!.id), files);
+    const photos = await SeekerPhotos.addMyPhotos(Number(req.user!.userId), files);
     res.status(201).json({ photos });
   }
 );
@@ -34,7 +34,7 @@ seekerPhotosRouter.delete(
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
     const deleted = await SeekerPhotos.deleteMyPhoto(
-      Number(req.user!.id),
+      Number(req.user!.userId),
       Number(req.params.photoId)
     );
 

@@ -12,6 +12,8 @@ export type Me = {
   role: UserRole;
   createdAt?: string;
   isDisabled?: boolean;
+  displayName?: string;
+  avatarUrl?: string | null;
 };
 
 export type VacancyStatus = "PENDING" | "APPROVED" | "REJECTED" | "REMOVED";
@@ -120,4 +122,111 @@ export type JobPost = {
       email: string;
     };
   };
+};
+
+export type ThreadOrigin = "APPLICATION" | "INVITATION" | "DIRECT";
+
+export type ThreadCompanion = {
+  type: "company" | "seeker";
+  id: number;
+  name: string;
+  avatarUrl?: string | null;
+  subtitle?: string | null;
+};
+
+export type ThreadListItem = {
+  id: number;
+  origin: ThreadOrigin;
+  createdAt: string;
+  updatedAt: string;
+  createdByUserId: number;
+  createdByMe: boolean;
+  companion: ThreadCompanion;
+  vacancy?: {
+    id: number;
+    title: string;
+  } | null;
+  resume?: {
+    id: number;
+    title: string;
+  } | null;
+  lastMessage?: {
+    id: number;
+    body: string;
+    isSystem?: boolean;
+    createdAt: string;
+    senderUserId: number;
+  } | null;
+};
+
+export type ResumePublicDetail = {
+  id: number;
+  title: string;
+  desiredPosition?: string | null;
+  salaryExpectation?: number | null;
+  experienceLevel?: string | null;
+  skills?: string[];
+  status?: string;
+  updatedAt?: string;
+  resumeFile?: {
+    id: number;
+    fileName: string;
+    mimeType?: string;
+    url?: string;
+  } | null;
+  seekerProfile?: {
+    id: number;
+    firstName?: string | null;
+    lastName?: string | null;
+    location?: string | null;
+    headline?: string | null;
+    avatarUrl?: string | null;
+  };
+};
+
+export type CandidateStage =
+  | "UNDER_REVIEW"
+  | "INVITED_TO_INTERVIEW"
+  | "INTERVIEWED"
+  | "HIRED"
+  | "REJECTED";
+
+export type MessagingThreadMessage = {
+  id: number;
+  body: string;
+  createdAt: string;
+  senderUserId?: number;
+  senderUser?: {
+    id: number;
+    email?: string | null;
+  };
+};
+
+export type MessagingThread = {
+  id: number;
+  createdAt?: string;
+  updatedAt: string;
+  companyEngagedAt?: string | null;
+  candidateStage?: CandidateStage | null;
+  seekerProfile?: {
+    id: number;
+    userId?: number;
+    firstName?: string | null;
+    lastName?: string | null;
+    headline?: string | null;
+    location?: string | null;
+  };
+  companyProfile?: {
+    id: number;
+    userId?: number;
+    companyName?: string | null;
+    companyCity?: string | null;
+    companyCountry?: string | null;
+    companyLogoUrl?: string | null;
+  };
+  vacancy?: {
+    id: number;
+    title?: string | null;
+  } | null;
+  messages?: MessagingThreadMessage[];
 };

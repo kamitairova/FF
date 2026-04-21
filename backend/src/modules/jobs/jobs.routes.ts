@@ -24,7 +24,7 @@ jobsRouter.get(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res: Response) => {
-    const companyId = parseInt(req.user!.id);
+    const companyId = req.user!.userId; // ✅ фикс
     const items = await Jobs.listMyJobs(companyId);
     res.json({ items });
   }
@@ -38,7 +38,7 @@ jobsRouter.get(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res: Response) => {
-    const companyId = parseInt(req.user!.id);
+    const companyId = req.user!.userId; // ✅ фикс
     const id = Number(req.params.id);
 
     const job = await Jobs.getMyJobById(companyId, id);
@@ -79,7 +79,7 @@ jobsRouter.post(
   requireRole("COMPANY"),
   validateBody(createJobSchema),
   async (req: AuthedRequest, res: Response) => {
-    const companyId = parseInt(req.user!.id);
+    const companyId = req.user!.userId; // ✅ фикс
     const job = await Jobs.createJob(companyId, req.body);
     res.status(201).json({ job });
   }
@@ -94,7 +94,7 @@ jobsRouter.patch(
   requireRole("COMPANY"),
   validateBody(updateJobSchema),
   async (req: AuthedRequest, res: Response) => {
-    const companyId = parseInt(req.user!.id);
+    const companyId = req.user!.userId; // ✅ фикс
     const id = Number(req.params.id);
 
     const result = await Jobs.updateJob(companyId, id, req.body);
@@ -119,7 +119,7 @@ jobsRouter.delete(
   requireAuth,
   requireRole("COMPANY"),
   async (req: AuthedRequest, res: Response) => {
-    const companyId = parseInt(req.user!.id);
+    const companyId = req.user!.userId; // ✅ фикс
     const id = Number(req.params.id);
 
     const result = await Jobs.deleteJob(companyId, id);
@@ -133,5 +133,80 @@ jobsRouter.delete(
     }
 
     res.status(204).send();
+  }
+);
+
+/**
+ * GET /api/jobs/saved
+ */
+jobsRouter.get(
+  "/saved",
+  requireAuth,
+  requireRole("USER"),
+  async (req: AuthedRequest, res: Response) => {
+    const result = await Jobs.listSavedJobs(req.user!.userId, req.query);
+    res.json(result);
+  }
+);
+
+/**
+ * GET /api/jobs/:id/saved-status
+ */
+jobsRouter.get(
+  "/:id/saved-status",
+  requireAuth,
+  requireRole("USER"),
+  async (req: AuthedRequest, res: Response) => {
+    const id = Number(req.params.id);
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const saved = await Jobs.isJobSaved(req.user!.userId, id);
+    res.json({ saved });
+  }
+);
+
+/**
+ * POST /api/jobs/:id/save
+ */
+jobsRouter.post(
+  "/:id/save",
+  requireAuth,
+  requireRole("USER"),
+  async (req: AuthedRequest, res: Response) => {
+    const id = Number(req.params.id);
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    const result = await Jobs.saveJob(req.user!.userId, id);
+
+    if (!result) {
+      return res.status(404).json({ message: "Vacancy not found" });
+    }
+
+    res.status(201).json({ ok: true });
+  }
+);
+
+/**
+ * DELETE /api/jobs/:id/save
+ */
+jobsRouter.delete(
+  "/:id/save",
+  requireAuth,
+  requireRole("USER"),
+  async (req: AuthedRequest, res: Response) => {
+    const id = Number(req.params.id);
+
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ message: "Invalid id" });
+    }
+
+    await Jobs.unsaveJob(req.user!.userId, id);
+    res.json({ ok: true });
   }
 );

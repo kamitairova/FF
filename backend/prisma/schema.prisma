@@ -65,6 +65,20 @@ enum NotificationType {
   INTERVIEW_PROPOSED
 }
 
+enum ThreadOrigin {
+  APPLICATION
+  INVITATION
+  DIRECT
+}
+
+enum CandidateStage {
+  UNDER_REVIEW
+  INTERVIEWED
+  INVITED_TO_INTERVIEW
+  HIRED
+  REJECTED
+}
+
 model User {
   id         Int      @id @default(autoincrement())
   email      String   @unique
@@ -77,8 +91,11 @@ model User {
   companyProfile CompanyProfile?
   seekerProfile  JobSeekerProfile?
 
-  sentMessages  Message[]      @relation("MessageSender")
-  notifications Notification[]
+  sentMessages   Message[]      @relation("MessageSender")
+  notifications  Notification[]
+  createdThreads Thread[]       @relation("ThreadCreator")
+
+  hiddenThreads ThreadParticipantHidden[]
 
   @@index([role])
   @@index([isDisabled])
@@ -98,10 +115,10 @@ model CompanyProfile {
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vacancies  Vacancy[]
-  photos     CompanyPhoto[]
-  threads    Thread[]
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vacancies Vacancy[]
+  photos    CompanyPhoto[]
+  threads   Thread[]
 
   @@index([companyName])
   @@index([companyCity])
@@ -121,25 +138,26 @@ model CompanyPhoto {
 }
 
 model Vacancy {
-  id              Int             @id @default(autoincrement())
-  title           String
-  description     String
-  salaryFrom      Int?
-  salaryTo        Int?
-  city            String?
-  category        String?
-  employmentType  EmploymentType?
-  workMode        WorkMode?
-  experienceLevel ExperienceLevel?
-  requiredSkills  String[]        @default([])
-  status          VacancyStatus   @default(PENDING)
-  wasPublishedBefore Boolean      @default(false)
+  id                 Int              @id @default(autoincrement())
+  title              String
+  description        String
+  salaryFrom         Int?
+  salaryTo           Int?
+  city               String?
+  category           String?
+  employmentType     EmploymentType?
+  workMode           WorkMode?
+  experienceLevel    ExperienceLevel?
+  requiredSkills     String[]         @default([])
+  status             VacancyStatus    @default(PENDING)
+  wasPublishedBefore Boolean          @default(false)
 
   companyProfileId Int
   companyProfile   CompanyProfile @relation(fields: [companyProfileId], references: [id], onDelete: Cascade)
 
   applications Application[]
   savedBy      SavedJob[]
+  threads      Thread[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -159,23 +177,21 @@ model JobSeekerProfile {
   userId          Int              @unique
   firstName       String
   lastName        String?
+  avatarUrl       String?
   location        String?
   headline        String?
+  summary         String?
+  phone           String?
   experienceLevel ExperienceLevel?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos       SeekerPhoto[]
   resumes      Resume[]
   applications Application[]
   savedJobs    SavedJob[]
   threads      Thread[]
-
-  @@index([firstName])
-  @@index([lastName])
-  @@index([location])
-  @@index([experienceLevel])
 }
 
 model SeekerPhoto {
@@ -261,18 +277,41 @@ model SavedJob {
 }
 
 model Thread {
-  id               Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   seekerProfileId  Int
   companyProfileId Int
-  createdAt        DateTime @default(now())
+  vacancyId        Int
+
+  createdByUserId Int
+  createdByUser   User @relation("ThreadCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+
+  companyEngagedAt DateTime?
+  candidateStage   CandidateStage?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   seekerProfile  JobSeekerProfile @relation(fields: [seekerProfileId], references: [id], onDelete: Cascade)
   companyProfile CompanyProfile   @relation(fields: [companyProfileId], references: [id], onDelete: Cascade)
-  messages       Message[]
+  vacancy        Vacancy          @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
 
-  @@unique([seekerProfileId, companyProfileId])
-  @@index([seekerProfileId])
-  @@index([companyProfileId])
+  messages  Message[]
+  hiddenFor ThreadParticipantHidden[]
+
+  @@unique([seekerProfileId, companyProfileId, vacancyId])
+}
+
+model ThreadParticipantHidden {
+  id       Int      @id @default(autoincrement())
+  threadId Int
+  userId   Int
+  hiddenAt DateTime @default(now())
+
+  thread Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
 }
 
 model Message {
@@ -280,6 +319,7 @@ model Message {
   threadId     Int
   senderUserId Int
   body         String
+  isSystem     Boolean  @default(false)
   createdAt    DateTime @default(now())
 
   thread     Thread @relation(fields: [threadId], references: [id], onDelete: Cascade)

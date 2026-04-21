@@ -1,5 +1,17 @@
 import { apiFetch } from "./client";
-import type { Application, CompanyProfile, JobPost, Me, Message, Paged, UserRole } from "./types";
+import type { MessagingThread, CandidateStage } from "./types";
+
+import type {
+  Application,
+  CompanyProfile,
+  JobPost,
+  Me,
+  Message,
+  Paged,
+  ResumePublicDetail,
+  ThreadListItem,
+  UserRole,
+} from "./types";
 
 export const authApi = {
   register: (body: { email: string; password: string; role?: Exclude<UserRole, "ADMIN"> }) =>
@@ -200,6 +212,13 @@ export const seekerPhotosApi = {
     }),
 };
 
+export const publicSeekersApi = {
+  getById: (seekerProfileId: number | string) =>
+    apiFetch<{ profile: any }>(`/seekers/${seekerProfileId}`, {
+      method: "GET",
+    }),
+};
+
 export const candidatesApi = {
   list: async (_token: string, _qs?: string): Promise<Paged<any>> => ({
     data: [],
@@ -210,22 +229,80 @@ export const candidatesApi = {
   get: async (_token: string, _id: number | string) => ({ item: null as any }),
 };
 
+
 export const messagingApi = {
-  threads: async (_token: string, _qs?: string): Promise<Paged<any>> => ({
-    data: [],
-    page: 1,
-    pageSize: 50,
-    total: 0,
-  }),
+  threads: (token: string) =>
+    apiFetch<MessagingThread[]>("/messaging/threads", {
+      method: "GET",
+      token,
+    }),
 
-  messages: async (_token: string, _threadId: string, _qs?: string): Promise<Paged<Message>> => ({
-    data: [],
-    page: 1,
-    pageSize: 200,
-    total: 0,
-  }),
+  seekerApplications: (token: string) =>
+    apiFetch<MessagingThread[]>("/messaging/seeker/applications", {
+      method: "GET",
+      token,
+    }),
 
-  send: async (_token: string, _threadId: string, _body: { body: string }) => ({ ok: true }),
+  threadById: (token: string, threadId: number) =>
+    apiFetch<MessagingThread>(`/messaging/threads/${threadId}`, {
+      method: "GET",
+      token,
+    }),
+
+  sendMessage: (token: string, threadId: number, body: string) =>
+    apiFetch(`/messaging/threads/${threadId}/messages`, {
+      method: "POST",
+      token,
+      body: JSON.stringify({ body }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
+
+  deleteForMe: (token: string, threadId: number) =>
+    apiFetch(`/messaging/threads/${threadId}/for-me`, {
+      method: "DELETE",
+      token,
+    }),
+
+  companyCandidates: (token: string) =>
+    apiFetch<MessagingThread[]>("/messaging/company/candidates", {
+      method: "GET",
+      token,
+    }),
+
+  updateStage: (token: string, threadId: number, stage: CandidateStage) =>
+    apiFetch(`/messaging/company/candidates/${threadId}/stage`, {
+      method: "PATCH",
+      token,
+      body: JSON.stringify({ stage }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
+
+  invite: (
+    token: string,
+    data: { seekerProfileId: number; vacancyId: number }
+  ) =>
+    apiFetch<{ id: number }>("/messaging/invite", {
+      method: "POST",
+      token,
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
+
+  apply: (token: string, vacancyId: number) =>
+    apiFetch<{ id: number }>("/messaging/apply", {
+      method: "POST",
+      token,
+      body: JSON.stringify({ vacancyId }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }),
 };
 
 export const notificationsApi = {
@@ -237,3 +314,24 @@ export const notificationsApi = {
   }),
   markRead: async (_token: string, _id: number | string) => ({ ok: true }),
 };
+
+export const resumesApi = {
+  mine: (token: string) =>
+    apiFetch<{ data: any[] }>(`/seeker/resumes`, {
+      method: "GET",
+      token,
+    }),
+
+  byId: (id: string | number, token?: string) =>
+    apiFetch<any>(`/resumes/${id}`, {
+      method: "GET",
+      token,
+    }),
+
+  delete: (token: string, id: number) =>
+    apiFetch<void>(`/seeker/resumes/${id}`, {
+      method: "DELETE",
+      token,
+    }),
+};
+

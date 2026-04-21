@@ -5,12 +5,16 @@
   import { errorHandler } from "./middlewares/error";
   import { jobsRouter } from "./modules/jobs/jobs.routes";
   import { adminRouter } from "./modules/admin/admin.routes";
+  import { adminResumesRouter } from "./modules/admin/admin.resumes.routes";
   import { companyRouter } from "./modules/company/company.routes";
   import { companiesRouter } from "./modules/companies/companies.routes";
   import { seekerProfileRouter } from "./modules/seeker/seeker-profile.routes";
   import { seekerPhotosRouter } from "./modules/seeker-photo/seeker-photos.routes";
   import { resumesRouter } from "./modules/resumes/resumes.routes";
   import { publicSeekersRouter } from "./modules/public-seekers/public-seekers.routes";
+  import { seekerAvatarRouter } from "./modules/seeker-avatar/seeker-avatar.routes";
+  import { messagingRouter } from "./modules/messaging/messaging.routes";
+  
   import path from "path"
 
 // ... после остальных роутов
@@ -53,13 +57,19 @@
 
   app.use("/api/seeker", seekerProfileRouter);
   app.use("/api/seeker", seekerPhotosRouter);
+  app.use("/api/seeker", seekerAvatarRouter);
   app.use("/api/seeker", resumesRouter);
   app.use("/api", publicSeekersRouter);
 
-  app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+  app.use("/api/messaging", messagingRouter);
 
+  app.use(
+  "/uploads",
+  express.static(path.join(process.cwd(), "uploads"))
+);
 
   app.use("/api/admin", adminRouter);
+  app.use("/api/admin", adminResumesRouter);
 
   app.get("/api/db-check", async (_req, res) => {
     const result = await prisma.user.findMany();

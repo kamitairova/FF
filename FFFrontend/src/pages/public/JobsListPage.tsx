@@ -122,18 +122,37 @@ function JobFilters({
           <label className="label">Зарплата от</label>
           <Input
             type="number"
+            min={0}
+            step={50}
             placeholder="0"
             value={salaryMinDraft}
-            onChange={(e) => setSalaryMinDraft(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "") {
+                setSalaryMinDraft("");
+                return;
+              }
+              setSalaryMinDraft(String(Math.max(0, Number(value))));
+            }}
           />
         </div>
+
         <div>
           <label className="label">Зарплата до</label>
           <Input
             type="number"
+            min={0}
+            step={50}
             placeholder="0"
             value={salaryMaxDraft}
-            onChange={(e) => setSalaryMaxDraft(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "") {
+                setSalaryMaxDraft("");
+                return;
+              }
+              setSalaryMaxDraft(String(Math.max(0, Number(value))));
+            }}
           />
         </div>
       </div>
@@ -251,9 +270,10 @@ export function JobsListPage() {
     setSp(new URLSearchParams({ page: "1", pageSize: "10" }));
   };
 
-  const filtersRoot = typeof document !== "undefined"
-    ? document.getElementById("jobs-filters-root")
-    : null;
+  const filtersRoot =
+    typeof document !== "undefined"
+      ? document.getElementById("page-filters-root")
+      : null;
 
   if (query.isLoading) {
     return <Centered><Spinner /></Centered>;

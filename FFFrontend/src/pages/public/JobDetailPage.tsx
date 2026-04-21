@@ -6,6 +6,8 @@ import { Button } from "../../components/Button";
 import { Spinner } from "../../components/Spinner";
 import { Centered } from "../../components/Centered";
 import { useAuth } from "../../auth/AuthProvider";
+import { useMutation } from "@tanstack/react-query";
+import { messagingApi } from "../../api/endpoints";
 import "../../components/ui.css";
 
 function money(min?: number | null, max?: number | null) {
@@ -20,6 +22,16 @@ export function JobDetailPage() {
   const nav = useNavigate();
   const { token, me } = useAuth();
   const [info, setInfo] = useState<string | null>(null);
+
+  const apply = useMutation({
+    mutationFn: async () => messagingApi.apply(token!, idNum),
+    onSuccess: (res: any) => {
+      nav(`/inbox/${res.id}`);
+    },
+    onError: (e: any) => {
+      setInfo(e?.message ?? "Не удалось откликнуться.");
+    },
+  });
 
   const idNum = Number(jobId);
   const hasValidId = Number.isFinite(idNum) && idNum > 0;
@@ -110,8 +122,12 @@ export function JobDetailPage() {
         <div className="toolbar" style={{ marginTop: 18 }}>
           {canSeeker && (
             <>
-              <Button variant="primary">
-                Откликнуться
+              <Button
+                variant="primary"
+                disabled={apply.isPending}
+                onClick={() => apply.mutate()}
+              >
+                {apply.isPending ? "Создание чата…" : "Откликнуться"}
               </Button>
 
               <Button>

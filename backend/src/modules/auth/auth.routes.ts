@@ -77,7 +77,8 @@ authRouter.post("/login", validateBody(loginSchema), async (req, res) => {
 });
 
 authRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
-  const userId = parseInt(req.user!.id, 10);
+  
+  const userId = req.user!.userId;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -87,6 +88,19 @@ authRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
       role: true,
       isDisabled: true,
       createdAt: true,
+      seekerProfile: {
+        select: {
+          firstName: true,
+          lastName: true,
+          avatarUrl: true,
+        },
+      },
+      companyProfile: {
+        select: {
+          companyName: true,
+          companyLogoUrl: true,
+        },
+      },
     },
   });
 
@@ -94,5 +108,33 @@ authRouter.get("/me", requireAuth, async (req: AuthedRequest, res) => {
     return res.status(404).json({ message: "User not found" });
   }
 
-  return res.json({ user });
+  const displayName =
+    user.role === "COMPANY"
+      ? user.companyProfile?.companyName || user.email
+      : user.role === "USER"
+      ? [user.seekerProfile?.firstName, user.seekerProfile?.lastName]
+          .filter(Boolean)
+          .join(" ") || user.email
+      : user.email;
+
+  const avatarUrl =
+    user.role === "COMPANY"
+      ? user.companyProfile?.companyLogoUrl || null
+      : user.role === "USER"
+      ? user.seekerProfile?.avatarUrl
+        ? `http://localhost:5000/${user.seekerProfile.avatarUrl.replace(/^\/+/, "")}`
+        : null
+      : null;
+
+  return res.json({
+    user: {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      isDisabled: user.isDisabled,
+      createdAt: user.createdAt,
+      displayName,
+      avatarUrl,
+    },
+  });
 });

@@ -8,8 +8,11 @@ const ownSeekerProfileSelect = Prisma.validator<Prisma.JobSeekerProfileSelect>()
   userId: true,
   firstName: true,
   lastName: true,
+  avatarUrl: true,
   location: true,
   headline: true,
+  summary: true,
+  phone: true,
   experienceLevel: true,
   createdAt: true,
   updatedAt: true,
@@ -87,6 +90,9 @@ async function ensureSeekerProfile(userId: number) {
 function mapProfile(profile: OwnSeekerProfile) {
   return {
     ...profile,
+    avatarUrl: profile.avatarUrl
+      ? toPublicUploadUrl(profile.avatarUrl.replace(/^\/+/, ""))
+      : null,
     photos: profile.photos.map((photo) => ({
       ...photo,
       url: toPublicUploadUrl(photo.storagePath),
@@ -120,8 +126,11 @@ export async function updateMySeekerProfile(
     select: {
       firstName: true,
       lastName: true,
+      avatarUrl: true,
       location: true,
       headline: true,
+      summary: true,
+      phone: true,
       experienceLevel: true,
     },
   });
@@ -137,6 +146,8 @@ export async function updateMySeekerProfile(
       lastName: data.lastName !== undefined ? data.lastName : current.lastName,
       location: data.location !== undefined ? data.location : current.location,
       headline: data.headline !== undefined ? data.headline : current.headline,
+      summary: data.summary !== undefined ? data.summary : current.summary,
+      phone: data.phone !== undefined ? data.phone : current.phone,
       experienceLevel:
         data.experienceLevel !== undefined
           ? data.experienceLevel

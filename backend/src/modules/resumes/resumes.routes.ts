@@ -13,7 +13,7 @@ resumesRouter.get(
   requireAuth,
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
-    const items = await Resumes.listMyResumes(Number(req.user!.id));
+    const items = await Resumes.listMyResumes(Number(req.user!.userId));
     res.json({ items });
   }
 );
@@ -24,7 +24,7 @@ resumesRouter.post(
   requireRole("USER"),
   validateBody(createResumeSchema),
   async (req: AuthedRequest, res) => {
-    const resume = await Resumes.createResume(Number(req.user!.id), req.body);
+    const resume = await Resumes.createResume(Number(req.user!.userId), req.body);
     res.status(201).json({ resume });
   }
 );
@@ -34,7 +34,7 @@ resumesRouter.get(
   requireAuth,
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
-    const resume = await Resumes.getMyResumeById(Number(req.user!.id), Number(req.params.resumeId));
+    const resume = await Resumes.getMyResumeById(Number(req.user!.userId), Number(req.params.resumeId));
 
     if (!resume) {
       return res.status(404).json({ message: "Резюме не найдено" });
@@ -51,7 +51,7 @@ resumesRouter.patch(
   validateBody(updateResumeSchema),
   async (req: AuthedRequest, res) => {
     const resume = await Resumes.updateResume(
-      Number(req.user!.id),
+      Number(req.user!.userId),
       Number(req.params.resumeId),
       req.body
     );
@@ -69,7 +69,7 @@ resumesRouter.delete(
   requireAuth,
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
-    const deleted = await Resumes.deleteResume(Number(req.user!.id), Number(req.params.resumeId));
+    const deleted = await Resumes.deleteResume(Number(req.user!.userId), Number(req.params.resumeId));
 
     if (!deleted) {
       return res.status(404).json({ message: "Резюме не найдено" });
@@ -87,7 +87,7 @@ resumesRouter.post(
   async (req: AuthedRequest, res) => {
     const file = req.file;
     const result = await Resumes.uploadResumeFile(
-      Number(req.user!.id),
+      Number(req.user!.userId),
       Number(req.params.resumeId),
       file
     );
@@ -106,7 +106,7 @@ resumesRouter.get(
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
     const result = await Resumes.getMyResumeFile(
-      Number(req.user!.id),
+      Number(req.user!.userId),
       Number(req.params.resumeId)
     );
 
@@ -124,7 +124,7 @@ resumesRouter.delete(
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
     const result = await Resumes.deleteMyResumeFile(
-      Number(req.user!.id),
+      Number(req.user!.userId),
       Number(req.params.resumeId)
     );
 

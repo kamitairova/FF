@@ -152,8 +152,11 @@ export async function getPublicSeekerProfileById(seekerProfileId: number) {
 
   if (!profile) return null;
 
-  return {
+    return {
     ...profile,
+    avatarUrl: profile.avatarUrl
+      ? toPublicUploadUrl(profile.avatarUrl.replace(/^\/+/, ""))
+      : null,
     photos: profile.photos.map((photo) => ({
       ...photo,
       url: toPublicUploadUrl(photo.storagePath),

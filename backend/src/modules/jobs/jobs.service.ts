@@ -276,3 +276,130 @@ export async function setJobStatus(id: number, status: VacancyStatus) {
     select: publicJobSelect,
   });
 }
+
+export async function saveJob(userId: number, vacancyId: number) {
+  const seeker = await prisma.jobSeekerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!seeker) {
+    throw new Error("Seeker profile not found");
+  }
+
+  const vacancy = await prisma.vacancy.findFirst({
+    where: {
+      id: vacancyId,
+      status: VacancyStatus.APPROVED,
+    },
+    select: { id: true },
+  });
+
+  if (!vacancy) {
+    return null;
+  }
+
+  await prisma.savedJob.upsert({
+    where: {
+      seekerProfileId_vacancyId: {
+        seekerProfileId: seeker.id,
+        vacancyId,
+      },
+    },
+    update: {},
+    create: {
+      seekerProfileId: seeker.id,
+      vacancyId,
+    },
+  });
+
+  return true;
+}
+
+export async function unsaveJob(userId: number, vacancyId: number) {
+  const seeker = await prisma.jobSeekerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!seeker) {
+    throw new Error("Seeker profile not found");
+  }
+
+  await prisma.savedJob.deleteMany({
+    where: {
+      seekerProfileId: seeker.id,
+      vacancyId,
+    },
+  });
+
+  return true;
+}
+
+export async function listSavedJobs(userId: number, rawQuery: unknown) {
+  const seeker = await prisma.jobSeekerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!seeker) {
+    throw new Error("Seeker profile not found");
+  }
+
+  const parsed = listPublicJobsQuerySchema.parse(rawQuery);
+  const page = parsed.page ?? 1;
+  const pageSize = parsed.pageSize ?? 10;
+  const skip = (page - 1) * pageSize;
+
+  const where: Prisma.SavedJobWhereInput = {
+    seekerProfileId: seeker.id,
+    vacancy: {
+      status: VacancyStatus.APPROVED,
+    },
+  };
+
+  const [total, rows] = await Promise.all([
+    prisma.savedJob.count({ where }),
+    prisma.savedJob.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: pageSize,
+      select: {
+        vacancy: {
+          select: publicJobSelect,
+        },
+      },
+    }),
+  ]);
+
+  return {
+    data: rows.map((row) => row.vacancy),
+    page,
+    pageSize,
+    total,
+  };
+}
+
+export async function isJobSaved(userId: number, vacancyId: number) {
+  const seeker = await prisma.jobSeekerProfile.findUnique({
+    where: { userId },
+    select: { id: true },
+  });
+
+  if (!seeker) {
+    return false;
+  }
+
+  const saved = await prisma.savedJob.findUnique({
+    where: {
+      seekerProfileId_vacancyId: {
+        seekerProfileId: seeker.id,
+        vacancyId,
+      },
+    },
+    select: { vacancyId: true },
+  });
+
+  return !!saved;
+}

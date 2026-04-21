@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
-import { verifyToken, JwtRole } from "../utils/jwt";
+import { verifyToken } from "../utils/jwt";
+import { Role } from "@prisma/client";
 
 export type AuthedRequest = Request & {
-  user?: { id: string; role: JwtRole };  // Используйте JwtRole из utils
+  user?: { userId: number; role: Role };
 };
 
 export function requireAuth(req: AuthedRequest, res: Response, next: NextFunction) {
@@ -14,14 +15,17 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
   const token = header.slice("Bearer ".length);
   try {
     const payload = verifyToken(token);
-    req.user = { id: payload.userId, role: payload.role };
+    req.user = {
+      userId: Number(payload.userId),
+      role: payload.role as Role,
+    };
     next();
   } catch {
     return res.status(401).json({ message: "Invalid token" });
   }
 }
 
-export function requireRole(role: JwtRole) {  // Используйте JwtRole
+export function requireRole(role: Role) {
   return (req: AuthedRequest, res: Response, next: NextFunction) => {
     if (!req.user) return res.status(401).json({ message: "Unauthorized" });
     if (req.user.role !== role) return res.status(403).json({ message: "Forbidden" });

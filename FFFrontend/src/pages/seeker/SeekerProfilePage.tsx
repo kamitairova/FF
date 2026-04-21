@@ -10,6 +10,7 @@ type TabKey = "edit" | "about" | "resumes";
 
 type SeekerProfileDto = {
   id?: number;
+  userId?: number;
   firstName?: string | null;
   lastName?: string | null;
   fullName?: string | null;
@@ -32,7 +33,6 @@ type SeekerPhotoDto = {
 type FormState = {
   firstName: string;
   lastName: string;
-  avatarUrl: string;
   headline: string;
   summary: string;
   location: string;
@@ -43,7 +43,6 @@ type FormState = {
 const emptyForm: FormState = {
   firstName: "",
   lastName: "",
-  avatarUrl: "",
   headline: "",
   summary: "",
   location: "",
@@ -80,6 +79,7 @@ function normalizeProfile(data: any, authEmail?: string | null): SeekerProfileDt
 
   return {
     id: profile.id,
+    userId: profile.userId,
     firstName: profile.firstName ?? "",
     lastName: profile.lastName ?? "",
     fullName: profile.fullName ?? "",
@@ -88,7 +88,7 @@ function normalizeProfile(data: any, authEmail?: string | null): SeekerProfileDt
     summary: profile.summary ?? "",
     location: profile.location ?? "",
     phone: profile.phone ?? "",
-    email: profile.email ?? authEmail ?? "",
+    email: profile.email ?? profile.user?.email ?? authEmail ?? "",
     experienceLevel: profile.experienceLevel ?? "",
   };
 }
@@ -97,7 +97,6 @@ function profileToForm(profile: SeekerProfileDto): FormState {
   return {
     firstName: profile.firstName ?? "",
     lastName: profile.lastName ?? "",
-    avatarUrl: profile.avatarUrl ?? "",
     headline: profile.headline ?? "",
     summary: profile.summary ?? "",
     location: profile.location ?? "",
@@ -113,8 +112,13 @@ export function SeekerProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [photosLoading, setPhotosLoading] = useState(false);
   const [photosUploading, setPhotosUploading] = useState(false);
+
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarDeleting, setAvatarDeleting] = useState(false);
+  const [selectedAvatar, setSelectedAvatar] = useState<File | null>(null);
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -196,7 +200,6 @@ export function SeekerProfilePage() {
       const payload = {
         firstName: form.firstName.trim(),
         lastName: form.lastName.trim(),
-        avatarUrl: form.avatarUrl.trim(),
         headline: form.headline.trim(),
         summary: form.summary.trim(),
         location: form.location.trim(),
@@ -225,8 +228,67 @@ export function SeekerProfilePage() {
   const handleReset = () => {
     if (!profile) return;
     setForm(profileToForm(profile));
+    setSelectedAvatar(null);
     setError("");
     setSuccess("");
+  };
+
+  const handleUploadAvatar = async () => {
+    if (!token || !selectedAvatar) return;
+
+    try {
+      setAvatarUploading(true);
+      setError("");
+      setSuccess("");
+
+      const formData = new FormData();
+      formData.append("avatar", selectedAvatar);
+
+      const updated = await apiFetch<any>("/seeker/profile/avatar", {
+        method: "POST",
+        token,
+        body: formData,
+      });
+
+      const normalized = normalizeProfile(updated, me?.email ?? "");
+      setProfile((prev) => ({
+        ...prev,
+        ...normalized,
+      }));
+      setSelectedAvatar(null);
+      setSuccess("Аватар обновлён");
+    } catch (e: any) {
+      setError(e?.message || "Не удалось загрузить аватар");
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!token) return;
+
+    try {
+      setAvatarDeleting(true);
+      setError("");
+      setSuccess("");
+
+      const updated = await apiFetch<any>("/seeker/profile/avatar", {
+        method: "DELETE",
+        token,
+      });
+
+      const normalized = normalizeProfile(updated, me?.email ?? "");
+      setProfile((prev) => ({
+        ...prev,
+        ...normalized,
+      }));
+      setSelectedAvatar(null);
+      setSuccess("Аватар удалён");
+    } catch (e: any) {
+      setError(e?.message || "Не удалось удалить аватар");
+    } finally {
+      setAvatarDeleting(false);
+    }
   };
 
   const handleUploadPhotos = async () => {
@@ -501,6 +563,83 @@ export function SeekerProfilePage() {
           <div className="surface card-pad" style={{ display: "grid", gap: 16 }}>
             <h2 className="editor-section-title">Редактирование профиля</h2>
 
+            <div
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: 16,
+                padding: 16,
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Аватар</h3>
+
+              <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                <div
+                  style={{
+                    width: 96,
+                    height: 96,
+                    borderRadius: 999,
+                    overflow: "hidden",
+                    border: "2px solid #111827",
+                    background: "#f8fafc",
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: 28,
+                    fontWeight: 800,
+                  }}
+                >
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Текущий аватар"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <span>{avatarLetter}</span>
+                  )}
+                </div>
+
+                <div style={{ display: "grid", gap: 10, minWidth: 260 }}>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/jpg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] ?? null;
+                      setSelectedAvatar(file);
+                    }}
+                  />
+
+                  {selectedAvatar ? (
+                    <div style={{ color: "#475569" }}>
+                      Выбран файл: {selectedAvatar.name}
+                    </div>
+                  ) : (
+                    <div style={{ color: "#64748b" }}>
+                      Выбери изображение для новой аватарки.
+                    </div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <Button
+                      variant="primary"
+                      onClick={handleUploadAvatar}
+                      disabled={!selectedAvatar || avatarUploading}
+                    >
+                      {avatarUploading ? "Загрузка..." : "Загрузить аватар"}
+                    </Button>
+
+                    <Button
+                      onClick={handleDeleteAvatar}
+                      disabled={!profile?.avatarUrl || avatarDeleting || avatarUploading}
+                    >
+                      {avatarDeleting ? "Удаление..." : "Удалить аватар"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="editor-two">
               <Input
                 placeholder="Имя"
@@ -513,12 +652,6 @@ export function SeekerProfilePage() {
                 onChange={(e) => setField("lastName", e.target.value)}
               />
             </div>
-
-            <Input
-              placeholder="URL аватарки"
-              value={form.avatarUrl}
-              onChange={(e) => setField("avatarUrl", e.target.value)}
-            />
 
             <Input
               placeholder="Короткое описание"
@@ -560,7 +693,7 @@ export function SeekerProfilePage() {
                 {saving ? "Сохранение..." : "Сохранить изменения"}
               </Button>
 
-              <Button onClick={handleReset} disabled={!hasChanges || saving}>
+              <Button onClick={handleReset} disabled={saving}>
                 Сбросить
               </Button>
             </div>
@@ -628,29 +761,23 @@ export function SeekerProfilePage() {
                   >
                     <img
                       src={buildImageUrl(photo.url)}
-                      alt={photo.fileName || photo.filename || "Фото"}
+                      alt={photo.fileName || photo.filename || "Фото соискателя"}
                       style={{
                         width: 110,
-                        height: 72,
-                        objectFit: "cover",
+                        height: 90,
                         borderRadius: 12,
+                        objectFit: "cover",
                         display: "block",
                       }}
                     />
 
-                    <div
-                      style={{
-                        minWidth: 0,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        color: "#475569",
-                      }}
-                    >
-                      {photo.fileName || photo.filename || photo.url}
+                    <div style={{ color: "#475569" }}>
+                      {photo.fileName || photo.filename || `Фото #${photo.id}`}
                     </div>
 
-                    <Button onClick={() => handleDeletePhoto(photo.id)}>Удалить</Button>
+                    <Button onClick={() => handleDeletePhoto(photo.id)}>
+                      Удалить
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -662,9 +789,8 @@ export function SeekerProfilePage() {
       {tab === "resumes" && (
         <div className="surface card-pad">
           <h2 className="editor-section-title">Мои резюме</h2>
-          <div style={{ marginTop: 10, color: "#6b7280" }}>
-            Здесь будут мои резюме карточками. Следующим шагом можно сделать отдельный
-            список резюме, кнопку создания и страницу редактирования каждого резюме.
+          <div style={{ marginTop: 12, color: "#6b7280" }}>
+            Здесь остаётся твоя текущая логика списка резюме или ссылка на страницу резюме.
           </div>
         </div>
       )}

@@ -1,86 +1,278 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { messagingApi } from "../../api/endpoints";
 import { useAuth } from "../../auth/AuthProvider";
-import { useParams, Link } from "react-router-dom";
+import type { MessagingThread } from "../../api/types";
 import { Spinner } from "../../components/Spinner";
 import { Centered } from "../../components/Centered";
 import { Button } from "../../components/Button";
-import { Textarea } from "../../components/Textarea";
 import "../../components/ui.css";
 
+function getThreadTitle(thread: MessagingThread, role?: string) {
+  if (role === "COMPANY") {
+    const first = thread.seekerProfile?.firstName ?? "";
+    const last = thread.seekerProfile?.lastName ?? "";
+    const full = `${first} ${last}`.trim();
+    return full || "Соискатель";
+  }
+
+  return thread.companyProfile?.companyName?.trim() || "Компания";
+}
+
+function formatMessageTime(value?: string) {
+  if (!value) return "";
+  return new Date(value).toLocaleString();
+}
+
+function getProfilePath(thread: MessagingThread, role?: string) {
+  if (role === "COMPANY" && thread.seekerProfile?.id) {
+    return `/seekers/${thread.seekerProfile.id}`;
+  }
+
+  if (role === "USER" && thread.companyProfile?.id) {
+    return `/companies/${thread.companyProfile.id}`;
+  }
+
+  return null;
+}
+
 export function ThreadPage() {
-  const { token, me } = useAuth();
   const { threadId } = useParams();
+  const { token, me } = useAuth();
   const qc = useQueryClient();
-  const [body, setBody] = useState("");
-  const [info, setInfo] = useState<string | null>(null);
+  const nav = useNavigate();
 
-  const qs = useMemo(() => `?page=1&pageSize=200`, []);
+  const [text, setText] = useState("");
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const q = useQuery({
-    queryKey: ["messages", threadId, qs],
-    queryFn: () => messagingApi.messages(token!, threadId!, qs),
-    enabled: !!token && !!threadId
+  const idNum = Number(threadId);
+
+  const q = useQuery<MessagingThread>({
+    queryKey: ["thread", idNum],
+    queryFn: () => messagingApi.threadById(token!, idNum),
+    enabled: !!token && Number.isFinite(idNum),
+    refetchInterval: 5000,
   });
 
-  const send = useMutation({
-    mutationFn: async () => messagingApi.send(token!, threadId!, { body: body.trim() }),
-    onSuccess: () => {
-      setBody("");
-      setInfo(null);
-      qc.invalidateQueries({ queryKey: ["messages", threadId, qs] });
+  const sendMut = useMutation({
+    mutationFn: () => messagingApi.sendMessage(token!, idNum, text.trim()),
+    onSuccess: async () => {
+      setText("");
+      await qc.invalidateQueries({ queryKey: ["thread", idNum] });
+      await qc.invalidateQueries({ queryKey: ["threads"] });
+      await qc.invalidateQueries({ queryKey: ["company-candidates"] });
+      await qc.invalidateQueries({ queryKey: ["seeker-applications"] });
+      await qc.invalidateQueries({ queryKey: ["chat-sidebar", "all"] });
     },
-    onError: (e: any) => setInfo(e?.message ?? "Не удалось отправить сообщение.")
   });
 
-  if (q.isLoading) return <Centered><Spinner /></Centered>;
-  if (q.isError) return <Centered title="Ошибка">{(q.error as any)?.message ?? "Не удалось загрузить сообщения."}</Centered>;
+  const deleteMut = useMutation({
+    mutationFn: () => messagingApi.deleteForMe(token!, idNum),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["thread", idNum] });
+      await qc.invalidateQueries({ queryKey: ["threads"] });
+      await qc.invalidateQueries({ queryKey: ["company-candidates"] });
+      await qc.invalidateQueries({ queryKey: ["seeker-applications"] });
+      await qc.invalidateQueries({ queryKey: ["chat-sidebar", "all"] });
+      nav("/inbox");
+    },
+  });
 
-  const data = q.data!;
+  const thread = q.data;
+  const messages = useMemo(() => thread?.messages ?? [], [thread?.messages]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  if (q.isLoading) {
+    return (
+      <Centered>
+        <Spinner />
+      </Centered>
+    );
+  }
+
+  if (q.isError || !thread) {
+    return (
+      <Centered title="Ошибка">
+        {(q.error as any)?.message ?? "Не удалось загрузить чат."}
+      </Centered>
+    );
+  }
+
+  const title = getThreadTitle(thread, me?.role);
+  const profilePath = getProfilePath(thread, me?.role);
+
   return (
-    <div className="grid" style={{ gap: 14 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 80px)",
+        minHeight: 0,
+        gap: 14,
+      }}
+    >
       <div className="surface card-pad">
-        <div className="split">
+        <div
+          className="split"
+          style={{ alignItems: "flex-start", gap: 12 }}
+        >
           <div>
-            <div className="small" style={{ fontWeight: 900 }}>
-              <Link to="/inbox">Сообщения</Link> <span style={{ opacity: 0.6 }}> / </span> #{threadId?.slice(0, 8)}
-            </div>
-            <h1 className="h1" style={{ marginTop: 8 }}>Диалог</h1>
+            {profilePath ? (
+              <Link
+                to={profilePath}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                }}
+              >
+                <h1
+                  className="h1"
+                  style={{
+                    marginBottom: 6,
+                    cursor: "pointer",
+                  }}
+                >
+                  {title}
+                </h1>
+              </Link>
+            ) : (
+              <h1 className="h1" style={{ marginBottom: 6 }}>
+                {title}
+              </h1>
+            )}
+
+            {thread.vacancy?.title && (
+              <div className="small">Вакансия: {thread.vacancy.title}</div>
+            )}
           </div>
-          <div className="badge badge-blue">{me?.role ?? ""}</div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {profilePath && (
+              <Link to={profilePath} style={{ textDecoration: "none" }}>
+                <Button variant="default">Открыть профиль</Button>
+              </Link>
+            )}
+
+            <Button
+              variant="default"
+              disabled={deleteMut.isPending}
+              onClick={() => deleteMut.mutate()}
+            >
+              {deleteMut.isPending ? "Удаление..." : "Удалить чат"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="card card-pad">
-        {data.data.length === 0 ? (
-          <div className="p">Сообщений пока нет.</div>
-        ) : (
-          <div className="grid" style={{ gap: 10 }}>
-            {data.data.map((m) => (
-              <div key={m.id} className="surface" style={{ padding: 12 }}>
-                <div className="small" style={{ fontWeight: 900 }}>
-                  {m.senderUserId === me?.id ? "Вы" : "Собеседник"} · {new Date(m.createdAt).toLocaleString()}
+      <div
+        className="card card-pad"
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            flex: 1,
+            minHeight: 0,
+            overflowY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            paddingRight: 4,
+          }}
+        >
+          {messages.length === 0 ? (
+            <div className="small">Сообщений пока нет</div>
+          ) : (
+            messages.map((m) => {
+              const mine = Number(me?.id) === Number(m.senderUserId);
+
+              return (
+                <div
+                  key={m.id}
+                  style={{
+                    display: "flex",
+                    justifyContent: mine ? "flex-end" : "flex-start",
+                  }}
+                >
+                  <div
+                    style={{
+                      maxWidth: "72%",
+                      padding: "10px 12px",
+                      borderRadius: 16,
+                      background: mine ? "#4f6ef7" : "#eef2f7",
+                      color: mine ? "#ffffff" : "#0f172a",
+                      boxShadow: "0 1px 2px rgba(15, 23, 42, 0.06)",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    <div style={{ fontSize: 15, lineHeight: 1.45 }}>{m.body}</div>
+
+                    <div
+                      style={{
+                        fontSize: 11,
+                        marginTop: 6,
+                        opacity: mine ? 0.9 : 0.65,
+                        textAlign: "right",
+                      }}
+                    >
+                      {formatMessageTime(m.createdAt)}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ whiteSpace: "pre-wrap", marginTop: 6, lineHeight: 1.5 }}>{m.body}</div>
-              </div>
-            ))}
-          </div>
-        )}
+              );
+            })
+          )}
 
-        <div className="hr" style={{ margin: "14px 0" }} />
+          <div ref={bottomRef} />
+        </div>
+      </div>
 
-        <label className="label">Новое сообщение</label>
-        <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Напишите сообщение…" />
-        <div className="toolbar" style={{ marginTop: 10 }}>
+      <div
+        className="surface card-pad"
+        style={{
+          position: "sticky",
+          bottom: 0,
+          zIndex: 5,
+        }}
+      >
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && text.trim() && !sendMut.isPending) {
+                e.preventDefault();
+                sendMut.mutate();
+              }
+            }}
+            placeholder="Введите сообщение"
+            style={{
+              flex: 1,
+              minHeight: 48,
+              borderRadius: 12,
+              border: "1px solid #cbd5e1",
+              padding: "0 14px",
+              fontSize: 15,
+              outline: "none",
+            }}
+          />
+
           <Button
             variant="primary"
-            disabled={send.isPending || body.trim().length === 0}
-            onClick={() => send.mutate()}
+            disabled={!text.trim() || sendMut.isPending}
+            onClick={() => sendMut.mutate()}
           >
-            {send.isPending ? "Отправка…" : "Отправить"}
+            {sendMut.isPending ? "Отправка..." : "Отправить"}
           </Button>
-          {info && <div className="small" style={{ fontWeight: 800 }}>{info}</div>}
         </div>
       </div>
     </div>

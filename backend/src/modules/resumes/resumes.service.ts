@@ -102,8 +102,8 @@ export async function createResume(userId: number, data: CreateResumeInput) {
       salaryExpectation: data.salaryExpectation ?? null,
       experienceLevel: data.experienceLevel ?? null,
       skills: data.skills ?? [],
-      isPublic: data.isPublic ?? true,
-      // пока модерации резюме нет, оставляем status как есть по default
+      isPublic: false,
+      status: "APPROVED",
     },
     select: ownResumeSelect,
   });
@@ -126,7 +126,8 @@ export async function updateResume(userId: number, resumeId: number, data: Updat
       experienceLevel:
         data.experienceLevel !== undefined ? data.experienceLevel : owned.experienceLevel,
       skills: data.skills ?? owned.skills,
-      isPublic: data.isPublic ?? owned.isPublic,
+      isPublic: false,
+      status: "APPROVED",
     },
     select: ownResumeSelect,
   });
@@ -169,6 +170,8 @@ export async function uploadResumeFile(
     throw new Error("PDF файл обязателен");
   }
 
+
+
   const owned = await prisma.resume.findFirst({
     where: {
       id: resumeId,
@@ -201,6 +204,14 @@ export async function uploadResumeFile(
       },
     });
 
+    await prisma.resume.update({
+      where: { id: owned.id },
+      data: {
+        status: "PENDING",
+        isPublic: false,
+      },
+    });
+
     return {
       ...updated,
       url: toPublicUploadUrl(updated.storagePath),
@@ -214,6 +225,14 @@ export async function uploadResumeFile(
       mimeType: file.mimetype,
       storagePath,
       sizeBytes: file.size,
+    },
+  });
+
+  await prisma.resume.update({
+    where: { id: owned.id },
+    data: {
+      status: "PENDING",
+      isPublic: false,
     },
   });
 

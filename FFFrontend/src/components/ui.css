@@ -437,3 +437,35 @@
   height: 24px;
   cursor: pointer;
 }
+
+/* обычные кнопки (Approve / Reject) */
+.btn-outline {
+  padding: 6px 12px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff; /* 🔥 белые */
+  color: #0f172a;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-outline:hover {
+  background: #f8fafc;
+}
+
+/* Remove — красная */
+.btn-danger {
+  padding: 6px 12px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+}

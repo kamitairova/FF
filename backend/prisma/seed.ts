@@ -1,295 +1,251 @@
-import { PrismaClient, Role, VacancyStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  VacancyStatus,
+  ExperienceLevel,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-async function hashPassword(password: string) {
+async function hash(password: string) {
   return bcrypt.hash(password, 10);
 }
 
-async function upsertCompany(params: {
-  email: string;
-  password: string;
-  companyName: string;
-  companyCity?: string;
-  companyCountry?: string;
-  companyDescription?: string;
-}) {
-  const passwordHash = await hashPassword(params.password);
+async function main() {
+  console.log("🌱 Seeding...");
 
-  const user = await prisma.user.upsert({
-    where: { email: params.email },
-    update: {
-      password: passwordHash,
-      role: Role.COMPANY,
-    },
-    create: {
-      email: params.email,
-      password: passwordHash,
-      role: Role.COMPANY,
-    },
-  });
+  await prisma.$transaction([
+    prisma.application.deleteMany(),
+    prisma.savedJob.deleteMany(),
+    prisma.vacancy.deleteMany(),
+    prisma.companyPhoto.deleteMany(),
+    prisma.companyProfile.deleteMany(),
+    prisma.resume.deleteMany(),
+    prisma.seekerPhoto.deleteMany(),
+    prisma.jobSeekerProfile.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
 
-  const profile = await prisma.companyProfile.upsert({
-    where: { userId: user.id },
-    update: {
-      companyName: params.companyName,
-      companyCity: params.companyCity ?? null,
-      companyCountry: params.companyCountry ?? null,
-      companyDescription: params.companyDescription ?? null,
-    },
-    create: {
-      userId: user.id,
-      companyName: params.companyName,
-      companyCity: params.companyCity ?? null,
-      companyCountry: params.companyCountry ?? null,
-      companyDescription: params.companyDescription ?? null,
-    },
-  });
+  // ===== USERS =====
+  const users = [];
 
-  return { user, profile };
-}
+  for (let i = 1; i <= 5; i++) {
+    users.push(
+      await prisma.user.create({
+        data: {
+          email: `company${i}@test.com`,
+          password: await hash("123456"),
+          role: Role.COMPANY,
+        },
+      })
+    );
 
-async function upsertSeeker(params: {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName?: string;
-  location?: string;
-  headline?: string;
-  experienceLevel?: "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
-  resume?: {
-    title: string;
-    desiredPosition?: string;
-    salaryExpectation?: number;
-    experienceLevel?: "INTERN" | "JUNIOR" | "MIDDLE" | "SENIOR" | "LEAD";
-    skills?: string[];
-    isPublic?: boolean;
-  };
-}) {
-  const passwordHash = await hashPassword(params.password);
+    users.push(
+      await prisma.user.create({
+        data: {
+          email: `user${i}@test.com`,
+          password: await hash("123456"),
+          role: Role.USER,
+        },
+      })
+    );
+  }
 
-  const user = await prisma.user.upsert({
-    where: { email: params.email },
-    update: {
-      password: passwordHash,
-      role: Role.USER,
-    },
-    create: {
-      email: params.email,
-      password: passwordHash,
-      role: Role.USER,
-    },
-  });
+  // ===== DATA =====
 
-  const profile = await prisma.jobSeekerProfile.upsert({
-    where: { userId: user.id },
-    update: {
-      firstName: params.firstName,
-      lastName: params.lastName ?? null,
-      location: params.location ?? null,
-      headline: params.headline ?? null,
-      experienceLevel: params.experienceLevel ?? null,
-    },
-    create: {
-      userId: user.id,
-      firstName: params.firstName,
-      lastName: params.lastName ?? null,
-      location: params.location ?? null,
-      headline: params.headline ?? null,
-      experienceLevel: params.experienceLevel ?? null,
-    },
-  });
+  const companyNames = [
+    "TechNova Solutions",
+    "GreenFarm Market",
+    "EduSmart Academy",
+    "LogiTrans Group",
+    "Creative Media Hub",
+  ];
 
-  if (params.resume) {
-    const existingResume = await prisma.resume.findFirst({
-      where: {
-        seekerProfileId: profile.id,
-        title: params.resume.title,
+  const companyImages = [
+    "https://uradres.rent/_mod_files/ce_images/articles/chastnaya-kompaniya-vidy-osobennosti.jpg",
+    "https://catalog-cdn.detmir.st/media/Bqc07nIzj92_Alt3LslI50B56dldsdnm2PCjBFVIvxI=.webp?preset=site_product_gallery_r1500",
+    "https://habrastorage.org/getpro/habr/upload_files/741/73b/ac4/74173bac4ae562f46fd359b5ac2d2c43.jpg",
+    "https://avatars.mds.yandex.net/get-kinopoisk-post-img/1345014/1bc8f15fed404d47a278a68df0986ea6/960x540",
+    "https://img.freepik.com/free-photo/empty-room-with-chairs-desks_23-2149008873.jpg",
+  ];
+
+  const people = [
+    { firstName: "Алина", lastName: "Ибраимова" },
+    { firstName: "Данияр", lastName: "Султанов" },
+    { firstName: "Айбек", lastName: "Касымов" },
+    { firstName: "Нуриза", lastName: "Абдыкадырова" },
+    { firstName: "Тимур", lastName: "Жолдошев" },
+  ];
+
+  const seekerImages = [
+    "/uploads/seeker-photos/1775651203683-40b793cef9ce95d6.png",
+    "/uploads/seeker-photos/1775651203861-efd6f4bb8c8b6c8f.png",
+    "/uploads/seeker-photos/1775651203987-56b7cae34aa476bd.jpg",
+    "/uploads/seeker-photos/1775651203995-d1509e9ce49c9439.jpg",
+    "/uploads/seeker-photos/1775651203995-d1509e9ce49c9439.jpg",
+  ];
+
+  // ===== COMPANIES =====
+
+  const companies = [];
+
+  for (let i = 0; i < 5; i++) {
+    const company = await prisma.companyProfile.create({
+      data: {
+        userId: users[i * 2].id,
+        companyName: companyNames[i],
+        companyLogoUrl: companyImages[i],
+        companyCity: "Бишкек",
+        companyCountry: "Кыргызстан",
+        companyDescription: `${companyNames[i]} — современная компания, ориентированная на развитие сотрудников и качество продукта. Мы создаём комфортные условия труда и ценим инициативу.`,
+
+        photos: {
+          create: [
+            { imageUrl: companyImages[i], sortOrder: 0 },
+            { imageUrl: companyImages[i], sortOrder: 1 },
+            { imageUrl: companyImages[i], sortOrder: 2 },
+          ],
+        },
       },
     });
 
-    if (existingResume) {
-      await prisma.resume.update({
-        where: { id: existingResume.id },
-        data: {
-          desiredPosition: params.resume.desiredPosition ?? null,
-          salaryExpectation: params.resume.salaryExpectation ?? null,
-          experienceLevel: params.resume.experienceLevel ?? null,
-          skills: params.resume.skills ?? [],
-          isPublic: params.resume.isPublic ?? true,
-        },
-      });
-    } else {
-      await prisma.resume.create({
-        data: {
-          seekerProfileId: profile.id,
-          title: params.resume.title,
-          desiredPosition: params.resume.desiredPosition ?? null,
-          salaryExpectation: params.resume.salaryExpectation ?? null,
-          experienceLevel: params.resume.experienceLevel ?? null,
-          skills: params.resume.skills ?? [],
-          isPublic: params.resume.isPublic ?? true,
-        },
-      });
-    }
+    companies.push(company);
   }
 
-  return { user, profile };
-}
+  // ===== SEEKERS =====
 
-async function createVacancy(params: {
-  companyProfileId: number;
-  title: string;
-  description: string;
-  city?: string;
-  salaryFrom?: number;
-  salaryTo?: number;
-  requiredSkills?: string[];
-  status?: VacancyStatus;
-}) {
-  return prisma.vacancy.create({
-    data: {
-      companyProfileId: params.companyProfileId,
-      title: params.title,
-      description: params.description,
-      city: params.city ?? null,
-      salaryFrom: params.salaryFrom ?? null,
-      salaryTo: params.salaryTo ?? null,
-      requiredSkills: params.requiredSkills ?? [],
-      status: params.status ?? VacancyStatus.APPROVED,
-    },
-  });
-}
+  const seekers = [];
 
-async function main() {
-  await prisma.application.deleteMany();
-  await prisma.savedJob.deleteMany();
-  await prisma.resumeFile.deleteMany();
-  await prisma.resume.deleteMany();
-  await prisma.seekerPhoto.deleteMany();
-  await prisma.vacancy.deleteMany();
-  await prisma.companyPhoto.deleteMany();
-  await prisma.jobSeekerProfile.deleteMany();
-  await prisma.companyProfile.deleteMany();
-  await prisma.notification.deleteMany();
-  await prisma.message.deleteMany();
-  await prisma.thread.deleteMany();
-  await prisma.user.deleteMany();
+  for (let i = 0; i < 5; i++) {
+    const p = people[i];
 
-  const company1 = await upsertCompany({
-    email: "company1@test.com",
-    password: "123456",
-    companyName: "Tech Vision",
-    companyCity: "Bishkek",
-    companyCountry: "Kyrgyzstan",
-    companyDescription: "Frontend and backend development company",
-  });
+    const seeker = await prisma.jobSeekerProfile.create({
+      data: {
+        userId: users[i * 2 + 1].id,
+        firstName: p.firstName,
+        lastName: p.lastName,
+        avatarUrl: seekerImages[i],
+        location: "Бишкек",
+        headline: "Специалист с опытом",
+        summary: `Меня зовут ${p.firstName}. Я ответственный и мотивированный специалист, стремлюсь к профессиональному росту и развитию.`,
 
-  const company2 = await upsertCompany({
-    email: "company2@test.com",
-    password: "123456",
-    companyName: "Cloud Peak",
-    companyCity: "Bishkek",
-    companyCountry: "Kyrgyzstan",
-    companyDescription: "Remote-first software team",
-  });
+        experienceLevel:
+          [ExperienceLevel.JUNIOR, ExperienceLevel.MIDDLE, ExperienceLevel.SENIOR][
+            i % 3
+          ],
 
-  await upsertSeeker({
-    email: "seeker1@test.com",
-    password: "123456",
-    firstName: "Kamilla",
-    lastName: "Tairova",
-    location: "Bishkek",
-    headline: "Frontend Developer",
-    experienceLevel: "JUNIOR",
-    resume: {
-      title: "Frontend Resume",
-      desiredPosition: "Frontend Developer",
-      salaryExpectation: 1200,
-      experienceLevel: "JUNIOR",
+        photos: {
+          create: [
+            {
+              fileName: "img.jpg",
+              mimeType: "image/jpeg",
+              storagePath: seekerImages[i],
+              sizeBytes: 1000,
+              sortOrder: 0,
+            },
+            {
+              fileName: "img.jpg",
+              mimeType: "image/jpeg",
+              storagePath: seekerImages[i],
+              sizeBytes: 1000,
+              sortOrder: 1,
+            },
+            {
+              fileName: "img.jpg",
+              mimeType: "image/jpeg",
+              storagePath: seekerImages[i],
+              sizeBytes: 1000,
+              sortOrder: 2,
+            },
+          ],
+        },
+      },
+    });
+
+    seekers.push(seeker);
+  }
+
+  // ===== VACANCIES =====
+
+  const vacanciesBase = [
+    {
+      title: "Frontend разработчик (React)",
       skills: ["React", "TypeScript", "CSS"],
-      isPublic: true,
+      category: "IT",
     },
-  });
-
-  await upsertSeeker({
-    email: "seeker2@test.com",
-    password: "123456",
-    firstName: "Aida",
-    lastName: "Asanova",
-    location: "Osh",
-    headline: "UI/UX Designer",
-    experienceLevel: "MIDDLE",
-    resume: {
-      title: "Designer Resume",
-      desiredPosition: "UI/UX Designer",
-      salaryExpectation: 1000,
-      experienceLevel: "MIDDLE",
-      skills: ["Figma", "UX Research", "Prototyping"],
-      isPublic: true,
+    {
+      title: "Маркетолог",
+      skills: ["SMM", "SEO", "Контент"],
+      category: "Маркетинг",
     },
-  });
-
-  await upsertSeeker({
-    email: "seeker3@test.com",
-    password: "123456",
-    firstName: "Ilya",
-    lastName: "Petrov",
-    location: "Bishkek",
-    headline: "Backend Developer",
-    experienceLevel: "MIDDLE",
-    resume: {
-      title: "Backend Resume",
-      desiredPosition: "Backend Developer",
-      salaryExpectation: 1500,
-      experienceLevel: "MIDDLE",
-      skills: ["Node.js", "PostgreSQL", "Prisma"],
-      isPublic: true,
+    {
+      title: "Продавец-консультант",
+      skills: ["Продажи", "Коммуникация"],
+      category: "Ритейл",
     },
-  });
+    {
+      title: "Водитель-экспедитор",
+      skills: ["Вождение", "Логистика"],
+      category: "Логистика",
+    },
+    {
+      title: "Преподаватель английского",
+      skills: ["English", "Teaching"],
+      category: "Образование",
+    },
+    {
+      title: "UI/UX дизайнер",
+      skills: ["Figma", "UX/UI"],
+      category: "Дизайн",
+    },
+  ];
 
-  await createVacancy({
-    companyProfileId: company1.profile.id,
-    title: "Frontend Developer",
-    description: "React, TypeScript, Vite",
-    city: "Bishkek",
-    salaryFrom: 1000,
-    salaryTo: 1500,
-    requiredSkills: ["React", "TypeScript", "CSS"],
-    status: VacancyStatus.APPROVED,
-  });
+  for (let i = 0; i < 15; i++) {
+    const base = vacanciesBase[i % vacanciesBase.length];
 
-  await createVacancy({
-    companyProfileId: company1.profile.id,
-    title: "Backend Developer",
-    description: "Node.js, Prisma, PostgreSQL",
-    city: "Bishkek",
-    salaryFrom: 1200,
-    salaryTo: 1800,
-    requiredSkills: ["Node.js", "Prisma", "PostgreSQL"],
-    status: VacancyStatus.PENDING,
-  });
+    await prisma.vacancy.create({
+      data: {
+        title: base.title,
+        description: `Компания ищет специалиста на позицию "${base.title}". Обязанности включают выполнение задач, работу в команде и развитие профессиональных навыков.`,
+        salaryFrom: 400 + i * 50,
+        salaryTo: 800 + i * 100,
+        city: "Бишкек",
+        category: base.category,
+        requiredSkills: base.skills,
+        status: VacancyStatus.APPROVED,
+        companyProfileId: companies[i % 5].id,
+      },
+    });
+  }
 
-  await createVacancy({
-    companyProfileId: company2.profile.id,
-    title: "UI/UX Designer",
-    description: "Figma, design systems, prototyping",
-    city: "Remote",
-    salaryFrom: 900,
-    salaryTo: 1400,
-    requiredSkills: ["Figma", "UX", "Prototyping"],
-    status: VacancyStatus.APPROVED,
-  });
+  // ===== RESUMES =====
 
-  console.log("Seed completed successfully");
+  for (let i = 0; i < 7; i++) {
+    await prisma.resume.create({
+      data: {
+        seekerProfileId: seekers[i % 5].id,
+        title: `Резюме ${i + 1}`,
+        desiredPosition: "Специалист",
+        salaryExpectation: 800,
+        experienceLevel: ExperienceLevel.JUNIOR,
+        skills: ["Коммуникация", "Ответственность"],
+        isPublic: true,
+
+        resumeFile: {
+          create: {
+            fileName: "1776085125999-78827982-cv-template-01.jpg",
+            mimeType: "image/jpeg",
+            storagePath:
+              "/uploads/1776085125999-78827982-cv-template-01.jpg",
+            sizeBytes: 10000,
+          },
+        },
+      },
+    });
+  }
+
+  console.log("✅ Seed completed");
 }
 
-main()
-  .catch((e) => {
-    console.error("Seed failed:", e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+main().finally(() => prisma.$disconnect());

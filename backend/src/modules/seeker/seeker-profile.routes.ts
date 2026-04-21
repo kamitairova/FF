@@ -12,7 +12,7 @@ seekerProfileRouter.get(
   requireAuth,
   requireRole("USER"),
   async (req: AuthedRequest, res) => {
-    const profile = await SeekerProfile.getMySeekerProfile(Number(req.user!.id));
+    const profile = await SeekerProfile.getMySeekerProfile(Number(req.user!.userId));
     res.json({ profile });
   }
 );
@@ -23,7 +23,7 @@ seekerProfileRouter.patch(
   requireRole("USER"),
   validateBody(updateSeekerProfileSchema),
   async (req: AuthedRequest, res) => {
-    const profile = await SeekerProfile.updateMySeekerProfile(Number(req.user!.id), req.body);
+    const profile = await SeekerProfile.updateMySeekerProfile(Number(req.user!.userId), req.body);
     res.json({ profile });
   }
 );
